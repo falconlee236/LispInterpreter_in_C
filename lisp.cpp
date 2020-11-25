@@ -19,6 +19,7 @@ bool isdig(char c) {
     return isdigit(static_cast<unsigned char>(c)) != 0; 
 }
 
+
 ////////////////////// cell
 
 enum cell_type { Symbol, Number, List, Proc, Lambda };
@@ -96,63 +97,146 @@ private:
 };
 
 
+bool isfloat(string c) {
+    return c.find('.') == string::npos ? false : true;
+}
+
+
+bool check_float(const cellit& start, const cellit& end) {
+    for (cellit i = start; i != end; i++) {
+        if (isfloat(i->val)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 
 
 ////////////////////// built-in primitive procedures
 
-cell proc_add(const cells& c)
-{
-    long n(atol(c[0].val.c_str()));
-    for (cellit i = c.begin() + 1; i != c.end(); ++i) n += atol(i->val.c_str());
-    return cell(Number, str(n));
+cell proc_add(const cells& c){
+    bool flag = check_float(c.begin(), c.end());
+
+    if (flag) {
+        float n(stof(c[0].val));
+        for (cellit i = c.begin() + 1; i != c.end(); ++i) n += stof(i->val);
+        return cell(Number, to_string(n));
+    }
+    else {
+        long n(atol(c[0].val.c_str()));
+        for (cellit i = c.begin() + 1; i != c.end(); ++i) n += atol(i->val.c_str());
+        return cell(Number, str(n));
+    }
+   
 }
 
-cell proc_sub(const cells& c)
-{
-    long n(atol(c[0].val.c_str()));
-    for (cellit i = c.begin() + 1; i != c.end(); ++i) n -= atol(i->val.c_str());
-    return cell(Number, str(n));
+cell proc_sub(const cells& c){
+    bool flag = check_float(c.begin(), c.end());
+
+    if (flag) {
+        float n(stof(c[0].val));
+        for (cellit i = c.begin() + 1; i != c.end(); ++i) n -= stof(i->val);
+        return cell(Number, to_string(n));
+    }
+    else {
+        long n(atol(c[0].val.c_str()));
+        for (cellit i = c.begin() + 1; i != c.end(); ++i) n -= atol(i->val.c_str());
+        return cell(Number, str(n));
+    }
+    
 }
 
-cell proc_mul(const cells& c)
-{
-    long n(1);
-    for (cellit i = c.begin(); i != c.end(); ++i) n *= atol(i->val.c_str());
-    return cell(Number, str(n));
+cell proc_mul(const cells& c){
+    bool flag = check_float(c.begin(), c.end());
+
+    if (flag) {
+        float n(stof(c[0].val));
+        for (cellit i = c.begin() + 1; i != c.end(); ++i) n *= stof(i->val);
+        return cell(Number, to_string(n));
+    }
+    else {
+        long n(1);
+        for (cellit i = c.begin(); i != c.end(); ++i) n *= atol(i->val.c_str());
+        return cell(Number, str(n));
+    }
+    
 }
 
-cell proc_div(const cells& c)
-{
-    long n(atol(c[0].val.c_str()));
-    for (cellit i = c.begin() + 1; i != c.end(); ++i) n /= atol(i->val.c_str());
-    return cell(Number, str(n));
+cell proc_div(const cells& c){
+    bool flag = check_float(c.begin(), c.end());
+
+    if (flag) {
+        float n(stof(c[0].val));
+        for (cellit i = c.begin() + 1; i != c.end(); ++i) n /= stof(i->val);
+        return cell(Number, to_string(n));
+    }
+    else {
+        long n(atol(c[0].val.c_str()));
+        for (cellit i = c.begin() + 1; i != c.end(); ++i) n /= atol(i->val.c_str());
+        return cell(Number, str(n));
+    }
+    
 }
 
-cell proc_greater(const cells& c)
-{
-    long n(atol(c[0].val.c_str()));
-    for (cellit i = c.begin() + 1; i != c.end(); ++i)
-        if (n <= atol(i->val.c_str()))
-            return false_sym;
-    return true_sym;
+cell proc_greater(const cells& c){
+    bool flag = check_float(c.begin(), c.end());
+
+    if (flag) {
+        float n(stof(c[0].val));
+        for (cellit i = c.begin() + 1; i != c.end(); ++i)
+            if (n <= stof(i->val))
+                return false_sym;
+        return true_sym;
+    }
+    else {
+        long n(atol(c[0].val.c_str()));
+        for (cellit i = c.begin() + 1; i != c.end(); ++i)
+            if (n <= atol(i->val.c_str()))
+                return false_sym;
+        return true_sym;
+    }
+    
 }
 
-cell proc_less(const cells& c)
-{
-    long n(atol(c[0].val.c_str()));
-    for (cellit i = c.begin() + 1; i != c.end(); ++i)
-        if (n >= atol(i->val.c_str()))
-            return false_sym;
-    return true_sym;
+cell proc_less(const cells& c){
+    bool flag = check_float(c.begin(), c.end());
+
+    if (flag) {
+        float n(stof(c[0].val));
+        for (cellit i = c.begin() + 1; i != c.end(); ++i)
+            if (n >= stof(i->val))
+                return false_sym;
+        return true_sym;
+    }
+    else {
+        long n(atol(c[0].val.c_str()));
+        for (cellit i = c.begin() + 1; i != c.end(); ++i)
+            if (n >= atol(i->val.c_str()))
+                return false_sym;
+        return true_sym;
+    }
+
 }
 
-cell proc_less_equal(const cells& c)
-{
-    long n(atol(c[0].val.c_str()));
-    for (cellit i = c.begin() + 1; i != c.end(); ++i)
-        if (n > atol(i->val.c_str()))
-            return false_sym;
-    return true_sym;
+cell proc_less_equal(const cells& c){
+    bool flag = check_float(c.begin(), c.end());
+
+    if (flag) {
+        float n(stof(c[0].val));
+        for (cellit i = c.begin() + 1; i != c.end(); ++i)
+            if (n > stof(i->val))
+                return false_sym;
+        return true_sym;
+    }
+    else {
+        long n(atol(c[0].val.c_str()));
+        for (cellit i = c.begin() + 1; i != c.end(); ++i)
+            if (n > atol(i->val.c_str()))
+                return false_sym;
+        return true_sym;
+    }
+
 }
 
 cell proc_length(const cells& c) { return cell(Number, str(c[0].list.size())); }
@@ -206,9 +290,8 @@ void add_globals(environment& env)
 
 
 ////////////////////// eval
-
-cell eval(cell x, environment* env)
-{
+//이게 가장 중요하다 하.
+cell eval(cell x, environment* env){
     if (x.type == Symbol)
         return env->find(x.val)[x.val];
     if (x.type == Number)
@@ -238,7 +321,7 @@ cell eval(cell x, environment* env)
             return eval(x.list[x.list.size() - 1], env);
         }
     }
-    // (proc exp*)
+    // (proc exp*) ->  연산자
     cell proc(eval(x.list[0], env));
     cells exps;
     for (cell::iter exp = x.list.begin() + 1; exp != x.list.end(); ++exp)
@@ -265,8 +348,7 @@ cell eval(cell x, environment* env)
 
 // convert given string to list of tokens
 // 가장 중요한 함수인듯.
-list<string> tokenize(const string& str)
-{
+list<string> tokenize(const string& str){
     list<string> tokens;
     const char* s = str.c_str();
     while (*s) {
@@ -306,8 +388,9 @@ list<string> tokenize(const string& str)
 }
 
 // numbers become Numbers; every other token is a Symbol
-cell atom(const string& token)
-{
+cell atom(const string& token){
+    //정수이면 number라고 한다. 두번째 조건문은 -인 경우도 처리
+    //따라서 소수를 처리하려면 이쪽 부분을 변형해야 할 듯
     if (isdig(token[0]) || (token[0] == '-' && isdig(token[1])))
         return cell(Number, token);
     return cell(Symbol, token);
@@ -315,13 +398,14 @@ cell atom(const string& token)
 
 // return the Lisp expression in the given tokens
 // 사실 이게 더중요한듯
-cell read_from(list<string>& tokens)
-{
+cell read_from(list<string>& tokens){
     //list.front(): 첫번째 원소를 반환
     const string token(tokens.front());
+
     //pop_front(): 리스트 제일 앞에 원소 삭제
     tokens.pop_front();
-    //(로 시작하면 List로 판단
+
+    // (로 시작하면 List로 판단
     if (token == "(") {
         cell c(List);
         while (tokens.front() != ")")
