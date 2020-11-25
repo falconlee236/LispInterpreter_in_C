@@ -1,7 +1,3 @@
-// Scheme Interpreter in 90 lines of C++ (not counting lines after the first 90).
-// Inspired by Peter Norvig's Lis.py.
-// Copyright (c) 2010 Anthony C. Hay. This program leaks memory.
-
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -12,11 +8,16 @@
 using namespace std;
 
 // return given mumber as a string
-string str(long n) { ostringstream os; os << n; return os.str(); }
+string str(long n) { 
+    ostringstream os; 
+    os << n; 
+    return os.str(); 
+}
 
 // return true iff given character is '0'..'9'
-bool isdig(char c) { return isdigit(static_cast<unsigned char>(c)) != 0; }
-
+bool isdig(char c) { 
+    return isdigit(static_cast<unsigned char>(c)) != 0; 
+}
 
 ////////////////////// cell
 
@@ -26,14 +27,21 @@ struct environment; // forward declaration; cell and environment reference each 
 
 // a variant that can hold any kind of lisp value
 struct cell {
+    /*
+    함수 포인터, cell 함수이름(const vector<cell>&)형태의 함수를 포인팅한다.
+    */
     typedef cell(*proc_type)(const vector<cell>&);
     typedef vector<cell>::const_iterator iter;
+
+    //map containor는 값을 key : value 형식으로 저장
     typedef map<string, cell> map;
+
     cell_type type; 
     string val; 
     vector<cell> list; 
     proc_type proc; 
     environment* env;
+
     cell(cell_type type = Symbol) : type(type), env(0) {}
     cell(cell_type type, const string& val) : type(type), val(val), env(0) {}
     cell(proc_type proc) : type(Proc), proc(proc), env(0) {}
@@ -52,6 +60,9 @@ const cell nil(Symbol, "nil");
 // a dictionary that (a) associates symbols with cells, and
 // (b) can chain to an "outer" dictionary
 struct environment {
+    // map a variable name onto a cell
+    typedef map<string, cell> map;
+
     environment(environment* outer = 0) : outer_(outer) {}
 
     environment(const cells& parms, const cells& args, environment* outer)
@@ -62,22 +73,19 @@ struct environment {
             env_[p->val] = *a++;
     }
 
-    // map a variable name onto a cell
-    typedef std::map<std::string, cell> map;
-
     // return a reference to the innermost environment where 'var' appears
-    map& find(const std::string& var)
+    map& find(const string& var)
     {
         if (env_.find(var) != env_.end())
             return env_; // the symbol exists in this environment
         if (outer_)
             return outer_->find(var); // attempt to find the symbol in some "outer" env
-        std::cout << "unbound symbol '" << var << "'\n";
+        cout << "unbound symbol '" << var << endl;
         exit(1);
     }
 
     // return a reference to the cell associated with the given symbol 'var'
-    cell& operator[] (const std::string& var)
+    cell& operator[] (const string& var)
     {
         return env_[var];
     }
@@ -86,6 +94,8 @@ private:
     map env_; // inner symbol->cell mapping
     environment* outer_; // next adjacent outer env, or 0 if there are no further environments
 };
+
+
 
 
 ////////////////////// built-in primitive procedures
@@ -183,6 +193,7 @@ cell proc_list(const cells& c)
 // define the bare minimum set of primintives necessary to pass the unit tests
 void add_globals(environment& env)
 {
+    //env배열은 map<string, cell>로 이루어져 있다.
     env["nil"] = nil;   env["#f"] = false_sym;  env["#t"] = true_sym;
     env["append"] = cell(&proc_append);   env["car"] = cell(&proc_car);
     env["cdr"] = cell(&proc_cdr);      env["cons"] = cell(&proc_cons);
@@ -253,20 +264,23 @@ cell eval(cell x, environment* env)
 ////////////////////// parse, read and user interaction
 
 // convert given string to list of tokens
-std::list<std::string> tokenize(const std::string& str)
+// 가장 중요한 함수인듯.
+list<string> tokenize(const string& str)
 {
-    std::list<std::string> tokens;
+    list<string> tokens;
     const char* s = str.c_str();
     while (*s) {
-        while (*s == ' ')
+        while (*s == ' ') {
             ++s;
+        }
+
         if (*s == '(' || *s == ')')
             tokens.push_back(*s++ == '(' ? "(" : ")");
         else {
             const char* t = s;
             while (*t && *t != ' ' && *t != '(' && *t != ')')
                 ++t;
-            tokens.push_back(std::string(s, t));
+            tokens.push_back(string(s, t));
             s = t;
         }
     }
@@ -274,7 +288,7 @@ std::list<std::string> tokenize(const std::string& str)
 }
 
 // numbers become Numbers; every other token is a Symbol
-cell atom(const std::string& token)
+cell atom(const string& token)
 {
     if (isdig(token[0]) || (token[0] == '-' && isdig(token[1])))
         return cell(Number, token);
@@ -282,9 +296,9 @@ cell atom(const std::string& token)
 }
 
 // return the Lisp expression in the given tokens
-cell read_from(std::list<std::string>& tokens)
+cell read_from(list<string>& tokens)
 {
-    const std::string token(tokens.front());
+    const string token(tokens.front());
     tokens.pop_front();
     if (token == "(") {
         cell c(List);
@@ -298,17 +312,18 @@ cell read_from(std::list<std::string>& tokens)
 }
 
 // return the Lisp expression represented by the given string
-cell read(const std::string& s)
+cell read(const string& s)
 {
-    std::list<std::string> tokens(tokenize(s));
+    //list template는 양방향 연결리스트를 사용한다.
+    list<string> tokens(tokenize(s));
     return read_from(tokens);
 }
 
 // convert given cell to a Lisp-readable string
-std::string to_string(const cell& exp)
+string to_string(const cell& exp)
 {
     if (exp.type == List) {
-        std::string s("(");
+        string s("(");
         for (cell::iter e = exp.list.begin(); e != exp.list.end(); ++e)
             s += to_string(*e) + ' ';
         if (s[s.size() - 1] == ' ')
@@ -323,21 +338,35 @@ std::string to_string(const cell& exp)
 }
 
 // the default read-eval-print-loop
-void repl(const std::string& prompt, environment* env)
+void repl(const string& prompt, environment* env)
 {
-    for (;;) {
-        std::cout << prompt;
-        std::string line; std::getline(std::cin, line);
-        std::cout << to_string(eval(read(line), env)) << '\n';
+    while (true) {
+        cout << prompt;
+        string line; getline(cin, line);
+        cout << to_string(eval(read(line), env)) << endl;
     }
 }
 
-
 int main()
 {
-    environment global_env; add_globals(global_env);
+    environment global_env; 
+    add_globals(global_env);
     repl("90> ", &global_env);
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     /*
     Testing
