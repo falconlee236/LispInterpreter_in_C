@@ -96,12 +96,12 @@ private:
     environment* outer_; // next adjacent outer env, or 0 if there are no further environments
 };
 
-
+//made by LSY
 bool isfloat(string c) {
     return c.find('.') == string::npos ? false : true;
 }
 
-
+//made by LSY
 bool check_float(const cellit& start, const cellit& end) {
     for (cellit i = start; i != end; i++) {
         if (isfloat(i->val)) {
