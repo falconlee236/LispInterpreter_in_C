@@ -275,11 +275,29 @@ list<string> tokenize(const string& str)
         }
 
         if (*s == '(' || *s == ')')
+            /*
+            *s++의 수행 순서
+            1. s++가 먼저 수행된다. 
+            2. (*s)가 수행된다.
+            */
             tokens.push_back(*s++ == '(' ? "(" : ")");
         else {
             const char* t = s;
-            while (*t && *t != ' ' && *t != '(' && *t != ')')
+            //하나의 문자가 \0, 공백, (, )가 아니면 포인터를 다음으로 이동
+            while (*t && *t != ' ' && *t != '(' && *t != ')') {
                 ++t;
+            }
+            /*
+            template <class InputIterator>
+                 string  (InputIterator first, InputIterator last);
+                 c++에서는 pointer와 iterator는 같은것으로 취급
+                 [first,last)만큼의 substring을 만들어 준다.
+
+                 따라서 abcdef라는 문자열의 s포인터는 b에 있고, 
+                 t포인터는 e에 있다고 하면 
+                 string(s, t) = bcd  -> [b, e)
+            */
+
             tokens.push_back(string(s, t));
             s = t;
         }
@@ -296,10 +314,14 @@ cell atom(const string& token)
 }
 
 // return the Lisp expression in the given tokens
+// 사실 이게 더중요한듯
 cell read_from(list<string>& tokens)
 {
+    //list.front(): 첫번째 원소를 반환
     const string token(tokens.front());
+    //pop_front(): 리스트 제일 앞에 원소 삭제
     tokens.pop_front();
+    //(로 시작하면 List로 판단
     if (token == "(") {
         cell c(List);
         while (tokens.front() != ")")
