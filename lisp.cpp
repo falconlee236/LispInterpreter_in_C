@@ -299,8 +299,16 @@ cell eval(cell x, environment* env){
     if (x.list.empty())
         return nil;
     if (x.list[0].type == Symbol) {
-        if (x.list[0].val == "quote")       // (quote exp)
+        if (x.list[0].val[0] == '\'') {
+            //이 코드 버그 날 가능성 높음. 주의
+            if (x.list[0].val.size() == 2) {
+                string value = x.list[0].val;
+                x.list[0].val = value.substr(1, value.size());
+                return x.list[0];
+            }
             return x.list[1];
+        }
+        //if (x.list[0].val == "quote") return x.list[1];//'(x y z) -> (x y z)
         if (x.list[0].val == "if")          // (if test conseq [alt])
             return eval(eval(x.list[1], env).val == "#f" ? (x.list.size() < 4 ? nil : x.list[3]) : x.list[2], env);
         if (x.list[0].val == "set!")        // (set! var exp)
