@@ -8,8 +8,6 @@
 
 using namespace std;
 
-
-
 /*
 원본 코드는 냅두고 여러가지 코드 수정을 하는 버전
 */
@@ -286,9 +284,13 @@ cell eval(cell x, environment* env) {
         return x;
     if (x.list.empty())
         return nil;
-    if (x.list[0].type == Symbol) {
+    if (x.list[0].type == Symbol || x.val == "\'") {
+        if (x.val == "\'")
+            return x.list[0];
+        /*
         if (x.list[0].val == "\'")
             return x.list[1];
+            */
         //if (x.list[0].val == "quote") return x.list[1];//'(x y z) -> (x y z)
         if (lowercase(x.list[0].val) == "if")         // (if test conseq [alt])
             return eval(eval(x.list[1], env).val == "#f" ? (x.list.size() < 4 ? nil : x.list[3]) : x.list[2], env);
@@ -362,7 +364,6 @@ cell read(const string& s)
 }
 
 // convert given string to list of tokens
-// 가장 중요한 함수인듯.
 list<string> tokenize(const string& str) {
     list<string> tokens;
     const char* s = str.c_str();
@@ -400,6 +401,11 @@ cell read_from(list<string>& tokens) {
         while (tokens.front() != ")")
             c.list.push_back(read_from(tokens));
         tokens.pop_front();
+        return c;
+    }
+    else if (token == "\'") {
+        cell c(List, "\'");
+        c.list.push_back(read_from(tokens));
         return c;
     }
     else
