@@ -1,5 +1,6 @@
 #include <iostream>
 #include <sstream>
+#include <algorithm>
 #include <string>
 #include <vector>
 #include <list>
@@ -95,6 +96,7 @@ string str(long n);
 bool isdig(char c);
 bool isfloat(string c);
 bool check_float(const cellit& start, const cellit& end);
+string lowercase(string up_string);
 
 ////////////////////// built-in primitive procedures
 cell proc_add(const cells& c); cell proc_sub(const cells& c); cell proc_mul(const cells& c);
@@ -276,8 +278,10 @@ cell proc_list(const cells& c)
 
 ////////////////////// eval
 cell eval(cell x, environment* env) {
-    if (x.type == Symbol)
-        return env->find(x.val)[x.val];
+    if (x.type == Symbol) {
+        string lower_str = lowercase(x.val);
+        return env->find(lower_str)[lower_str];
+    }    
     if (x.type == Number)
         return x;
     if (x.list.empty())
@@ -286,9 +290,9 @@ cell eval(cell x, environment* env) {
         if (x.list[0].val == "\'")
             return x.list[1];
         //if (x.list[0].val == "quote") return x.list[1];//'(x y z) -> (x y z)
-        if (x.list[0].val == "if")          // (if test conseq [alt])
+        if (lowercase(x.list[0].val) == "if")         // (if test conseq [alt])
             return eval(eval(x.list[1], env).val == "#f" ? (x.list.size() < 4 ? nil : x.list[3]) : x.list[2], env);
-        if (x.list[0].val == "setq")      // (setq var exp)
+        if (lowercase(x.list[0].val) == "setq")      // (setq var exp)
             return (*env)[x.list[1].val] = eval(x.list[2], env);
     }
     // (proc exp*) ->  ¿¬»êÀÚ
@@ -302,6 +306,7 @@ cell eval(cell x, environment* env) {
 
     std::cout << "not a function\n";
     exit(1);
+
 }
 
 // return given mumber as a string
@@ -331,6 +336,10 @@ bool check_float(const cellit& start, const cellit& end) {
     return false;
 }
 
+string lowercase(string up_string) {
+    transform(up_string.begin(), up_string.end(), up_string.begin(), tolower);
+    return up_string;
+}
 
 ////////////////////// parse, read and user interaction
 
