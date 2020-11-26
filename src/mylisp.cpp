@@ -43,8 +43,8 @@ struct cell {
 typedef vector<cell> cells;
 typedef cells::const_iterator cellit;
 
-const cell false_sym(Symbol, "#f");
-const cell true_sym(Symbol, "#t"); // anything that isn't false_sym is true
+const cell false_sym(Symbol, "false");
+const cell true_sym(Symbol, "true"); // anything that isn't false_sym is true
 const cell nil(Symbol, "nil");
 
 
