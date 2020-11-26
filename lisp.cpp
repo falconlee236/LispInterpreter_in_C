@@ -398,17 +398,6 @@ list<string> tokenize(const string& str) {
             while (*t && *t != ' ' && *t != '(' && *t != ')') {
                 ++t;
             }
-            /*
-            template <class InputIterator>
-                 string  (InputIterator first, InputIterator last);
-                 c++에서는 pointer와 iterator는 같은것으로 취급
-                 [first,last)만큼의 substring을 만들어 준다.
-
-                 따라서 abcdef라는 문자열의 s포인터는 b에 있고,
-                 t포인터는 e에 있다고 하면
-                 string(s, t) = bcd  -> [b, e)
-            */
-
             tokens.push_back(string(s, t));
             s = t;
         }
@@ -417,18 +406,9 @@ list<string> tokenize(const string& str) {
 }
 
 // return the Lisp expression in the given tokens
-// 사실 이게 더중요한듯
 cell read_from(list<string>& tokens) {
-    //list.front(): 첫번째 원소를 반환
     const string token(tokens.front());
-
-    //pop_front(): 리스트 제일 앞에 원소 삭제
     tokens.pop_front();
-
-    if (token == "\'") {
-
-    }
-
 
     // (로 시작하면 List로 판단
     if (token == "(") {
@@ -444,8 +424,6 @@ cell read_from(list<string>& tokens) {
 
 // numbers become Numbers; every other token is a Symbol
 cell atom(const string& token) {
-    //정수이면 number라고 한다. 두번째 조건문은 -인 경우도 처리
-    //따라서 소수를 처리하려면 이쪽 부분을 변형해야 할 듯
     if (isdig(token[0]) || (token[0] == '-' && isdig(token[1])))
         return cell(Number, token);
     return cell(Symbol, token);
