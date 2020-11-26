@@ -7,9 +7,15 @@
 
 using namespace std;
 
+
+
+/*
+원본 코드는 냅두고 여러가지 코드 수정을 하는 버전
+*/
+
 ////////////////////// cell
 
-enum cell_type { Symbol, Number, List, Proc, Lambda };
+enum cell_type { Symbol, Number, List, Proc};
 
 struct environment; // forward declaration; cell and environment reference each other
 
@@ -109,7 +115,7 @@ function define
 
 ////////////////////// built-in primitive procedures
 
-cell proc_add(const cells& c){
+cell proc_add(const cells& c) {
     bool flag = check_float(c.begin(), c.end());
 
     if (flag) {
@@ -122,10 +128,10 @@ cell proc_add(const cells& c){
         for (cellit i = c.begin() + 1; i != c.end(); ++i) n += atol(i->val.c_str());
         return cell(Number, str(n));
     }
-   
+
 }
 
-cell proc_sub(const cells& c){
+cell proc_sub(const cells& c) {
     bool flag = check_float(c.begin(), c.end());
 
     if (flag) {
@@ -138,10 +144,10 @@ cell proc_sub(const cells& c){
         for (cellit i = c.begin() + 1; i != c.end(); ++i) n -= atol(i->val.c_str());
         return cell(Number, str(n));
     }
-    
+
 }
 
-cell proc_mul(const cells& c){
+cell proc_mul(const cells& c) {
     bool flag = check_float(c.begin(), c.end());
 
     if (flag) {
@@ -154,10 +160,10 @@ cell proc_mul(const cells& c){
         for (cellit i = c.begin(); i != c.end(); ++i) n *= atol(i->val.c_str());
         return cell(Number, str(n));
     }
-    
+
 }
 
-cell proc_div(const cells& c){
+cell proc_div(const cells& c) {
     bool flag = check_float(c.begin(), c.end());
 
     if (flag) {
@@ -170,10 +176,10 @@ cell proc_div(const cells& c){
         for (cellit i = c.begin() + 1; i != c.end(); ++i) n /= atol(i->val.c_str());
         return cell(Number, str(n));
     }
-    
+
 }
 
-cell proc_greater(const cells& c){
+cell proc_greater(const cells& c) {
     bool flag = check_float(c.begin(), c.end());
 
     if (flag) {
@@ -190,10 +196,10 @@ cell proc_greater(const cells& c){
                 return false_sym;
         return true_sym;
     }
-    
+
 }
 
-cell proc_less(const cells& c){
+cell proc_less(const cells& c) {
     bool flag = check_float(c.begin(), c.end());
 
     if (flag) {
@@ -213,7 +219,7 @@ cell proc_less(const cells& c){
 
 }
 
-cell proc_less_equal(const cells& c){
+cell proc_less_equal(const cells& c) {
     bool flag = check_float(c.begin(), c.end());
 
     if (flag) {
@@ -269,8 +275,7 @@ cell proc_list(const cells& c)
 }
 
 ////////////////////// eval
-//이게 가장 중요하다 하.
-cell eval(cell x, environment* env){
+cell eval(cell x, environment* env) {
     if (x.type == Symbol)
         return env->find(x.val)[x.val];
     if (x.type == Number)
@@ -278,45 +283,21 @@ cell eval(cell x, environment* env){
     if (x.list.empty())
         return nil;
     if (x.list[0].type == Symbol) {
-        if (x.list[0].val == "\'")  
+        if (x.list[0].val == "\'")
             return x.list[1];
         //if (x.list[0].val == "quote") return x.list[1];//'(x y z) -> (x y z)
         if (x.list[0].val == "if")          // (if test conseq [alt])
             return eval(eval(x.list[1], env).val == "#f" ? (x.list.size() < 4 ? nil : x.list[3]) : x.list[2], env);
-        if (x.list[0].val == "set!")        // (set! var exp)
-            return env->find(x.list[1].val)[x.list[1].val] = eval(x.list[2], env);
         if (x.list[0].val == "setq")      // (setq var exp)
             return (*env)[x.list[1].val] = eval(x.list[2], env);
-        if (x.list[0].val == "lambda") {    // (lambda (var*) exp)
-            x.type = Lambda;
-            // keep a reference to the environment that exists now (when the
-            // lambda is being defined) because that's the outer environment
-            // we'll need to use when the lambda is executed
-            x.env = env;
-            return x;
-        }
-        if (x.list[0].val == "begin") {     // (begin exp*)
-            for (size_t i = 1; i < x.list.size() - 1; ++i)
-                eval(x.list[i], env);
-            return eval(x.list[x.list.size() - 1], env);
-        }
     }
     // (proc exp*) ->  연산자
     cell proc(eval(x.list[0], env));
     cells exps;
     for (cell::iter exp = x.list.begin() + 1; exp != x.list.end(); ++exp)
         exps.push_back(eval(*exp, env));
-    if (proc.type == Lambda) {
-        // Create an environment for the execution of this lambda function
-        // where the outer environment is the one that existed* at the time
-        // the lambda was defined and the new inner associations are the
-        // parameter names with the given arguments.
-        // *Although the environmet existed at the time the lambda was defined
-        // it wasn't necessarily complete - it may have subsequently had
-        // more symbols defined in that environment.
-        return eval(/*body*/proc.list[2], new environment(/*parms*/proc.list[1].list, /*args*/exps, proc.env));
-    }
-    else if (proc.type == Proc)
+
+    if (proc.type == Proc)
         return proc.proc(exps);
 
     std::cout << "not a function\n";
@@ -382,11 +363,6 @@ list<string> tokenize(const string& str) {
         }
 
         if (*s == '(' || *s == ')')
-            /*
-            *s++의 수행 순서
-            1. s++가 먼저 수행된다.
-            2. (*s)가 수행된다.
-            */
             tokens.push_back(*s++ == '(' ? "(" : ")");
         else if (*s == '\'') {
             tokens.push_back("\'");
@@ -394,7 +370,6 @@ list<string> tokenize(const string& str) {
         }
         else {
             const char* t = s;
-            //하나의 문자가 \0, 공백, (, )가 아니면 포인터를 다음으로 이동
             while (*t && *t != ' ' && *t != '(' && *t != ')') {
                 ++t;
             }
@@ -440,8 +415,6 @@ string to_string(const cell& exp)
             s.erase(s.size() - 1);
         return s + ')';
     }
-    else if (exp.type == Lambda)
-        return "<Lambda>";
     else if (exp.type == Proc)
         return "<Proc>";
     return exp.val;
@@ -463,7 +436,7 @@ void add_globals(environment& env)
 
 int main()
 {
-    environment global_env; 
+    environment global_env;
     add_globals(global_env);
     repl("90> ", &global_env);
 }
@@ -482,18 +455,18 @@ int main()
 
 
 
-    /*
-    Testing
+/*
+Testing
 
-    Here are the 29 tests for Lis.py.The main() function in the code above is replaced by all this code to run the tests.
-    */
-    ////////////////////// unit tests
+Here are the 29 tests for Lis.py.The main() function in the code above is replaced by all this code to run the tests.
+*/
+////////////////////// unit tests
 
 unsigned g_test_count;      // count of number of unit tests executed
 unsigned g_fault_count;     // count of number of unit tests that fail
 
 template <typename T1, typename T2>
-void test_equal_(const T1 & value, const T2 & expected_value, const char* file, int line)
+void test_equal_(const T1& value, const T2& expected_value, const char* file, int line)
 {
     ++g_test_count;
     if (value != expected_value) {
