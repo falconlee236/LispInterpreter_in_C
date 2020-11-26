@@ -30,18 +30,18 @@ LispInterpreter_in_C
 
 
   > -> (SETQ X 5);  X에 5를 저장  
-  5
+  5  
   > -> X  
-  5
+  5  
   > -> (LIST 'X X 'Y);  (X 5 Y)라는 리스트를 만듬
 
 
 *	CAR : 리스트의 첫번째 원소를 가져온다.  
 
   > -> (CAR '(X Y Z));   리스트 (X Y Z)의 첫 번째 원소인 X가 결과로 나옴.  
-  X
+  X  
   > -> (CAR '((X) Y Z));  리스트 ((X) Y Z)의 첫 번째 원소인 (X)가 결과로 나옴.   
-  (X)
+  (X)  
 
 
 *	CDR : 리스트의 첫번째 원소를 제외한 나머지를 결과로 생성한다.  
@@ -63,9 +63,9 @@ LispInterpreter_in_C
 *	NTH : N번째 원소를 반환한다. 두번째 argument가 리스트가 아니면 에러  
 
   > -> (NTH 4 '(0 1 2 3 4 5 6));  4를 반환한다. (숫자를 0부터 셈에 주의)  
-  4  
+  4    
   > -> (NTH 3 '(A B));  NIL 반환.   
-  NIL  
+  NIL    
   > -> (NTH 3 'A);  Error   
   ERROR
 
@@ -96,21 +96,21 @@ LispInterpreter_in_C
 만약 찾고자 하는 원소가 주어진 리스트 내에 존재하면 그 원소부터 리스트 끝까지가 결과 값으로 반환된다.   
 리스트 내에 찾고자 하는 원소가 없을 경우 NIL이 반환된다.  
   > -> (SETQ CLUB '(TOM HARRY JOHN DANIEL))  
-  (TOM HARRY JOHN DANIEL)
-  > -> (MEMBER 'HARRY CLUB)  
+  (TOM HARRY JOHN DANIEL)  
+  > -> (MEMBER 'HARRY CLUB)    
   (HARRY JOHN DANIEL) ;  CLUB내의 원소 HARRY부터 그 리스트의 끝까지 반환됨  
 
 
 •	ASSOC : 리스트를 원소로 같는 리스트에서 원소 리스트의 첫번째 원소를 데이터베이스에서의 KEY처럼 사용하여 원하는 리스트를 찾을 수 있는 함수이다.   
 작은 데이터베이스 구축에 용이하게 쓸 수 있다.
-  > -> (ASSOC 'TWO '((ONE 1)(TWO 2)(THREE 3)))  
+  > -> (ASSOC 'TWO '((ONE 1)(TWO 2)(THREE 3)))    
   (TWO 2) ; 첫번째 원소가 TWO인 리스트를 찾아내서 리턴함  
 
 
 •	REMOVE : 첫 번째 인자를 두 번째 인자로 받는 리스트에서 찾아 모두 제거하는 함수이다.
 제거한 결과를 보여주기만 할 뿐, 그 결과값으로 리스트를 새로 저장하지는 않는다.   
   > -> (SETQ MYLIST '(A B C D E F))  
-  (A B C D E F)  
+  (A B C D E F)    
   > -> (REMOVE 'D MYLIST)  
   (A B C E F) ;  D가 삭제되었다.  
   > -> (SETQ MYLIST '(A D B C D E D F))  
