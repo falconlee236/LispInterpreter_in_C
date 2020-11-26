@@ -278,17 +278,9 @@ cell eval(cell x, environment* env){
     if (x.list.empty())
         return nil;
     if (x.list[0].type == Symbol) {
-        /*
-        if (x.list[0].val[0] == '\'') {
-            //이 코드 버그 날 가능성 높음. 주의
-            if (x.list[0].val.size() == 2) {
-                string value = x.list[0].val;
-                x.list[0].val = value.substr(1, value.size());
-                return x.list[0];
-            }
+        if (x.list[0].val == "\'")  
             return x.list[1];
-        }*/
-        if (x.list[0].val == "quote") return x.list[1];//'(x y z) -> (x y z)
+        //if (x.list[0].val == "quote") return x.list[1];//'(x y z) -> (x y z)
         if (x.list[0].val == "if")          // (if test conseq [alt])
             return eval(eval(x.list[1], env).val == "#f" ? (x.list.size() < 4 ? nil : x.list[3]) : x.list[2], env);
         if (x.list[0].val == "set!")        // (set! var exp)
@@ -396,6 +388,10 @@ list<string> tokenize(const string& str) {
             2. (*s)가 수행된다.
             */
             tokens.push_back(*s++ == '(' ? "(" : ")");
+        else if (*s == '\'') {
+            tokens.push_back("\'");
+            s++;
+        }
         else {
             const char* t = s;
             //하나의 문자가 \0, 공백, (, )가 아니면 포인터를 다음으로 이동
@@ -428,6 +424,11 @@ cell read_from(list<string>& tokens) {
 
     //pop_front(): 리스트 제일 앞에 원소 삭제
     tokens.pop_front();
+
+    if (token == "\'") {
+
+    }
+
 
     // (로 시작하면 List로 판단
     if (token == "(") {
