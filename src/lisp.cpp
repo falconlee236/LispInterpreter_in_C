@@ -7,6 +7,19 @@
 
 using namespace std;
 
+// return given mumber as a string
+string str(long n) { 
+    ostringstream os; 
+    os << n; 
+    return os.str(); 
+}
+
+// return true iff given character is '0'..'9'
+bool isdig(char c) { 
+    return isdigit(static_cast<unsigned char>(c)) != 0; 
+}
+
+
 ////////////////////// cell
 
 enum cell_type { Symbol, Number, List, Proc, Lambda };
@@ -24,10 +37,10 @@ struct cell {
     //map containor는 값을 key : value 형식으로 저장
     typedef map<string, cell> map;
 
-    cell_type type;
-    string val;
-    vector<cell> list;
-    proc_type proc;
+    cell_type type; 
+    string val; 
+    vector<cell> list; 
+    proc_type proc; 
     environment* env;
 
     cell(cell_type type = Symbol) : type(type), env(0) {}
@@ -83,29 +96,22 @@ private:
     environment* outer_; // next adjacent outer env, or 0 if there are no further environments
 };
 
+//made by LSY
+bool isfloat(string c) {
+    return c.find('.') == string::npos ? false : true;
+}
 
-////////////////////// user-define fucntions
-string str(long n);
-bool isdig(char c);
-bool isfloat(string c);
-bool check_float(const cellit& start, const cellit& end);
-
-////////////////////// built-in primitive procedures
-cell proc_add(const cells& c); cell proc_sub(const cells& c); cell proc_mul(const cells& c);
-cell proc_div(const cells& c); cell proc_greater(const cells& c); cell proc_less(const cells& c);
-cell proc_less_equal(const cells& c); cell proc_length(const cells& c); cell proc_nullp(const cells& c);
-cell proc_car(const cells& c); cell proc_cdr(const cells& c); cell proc_append(const cells& c);
-cell proc_cons(const cells& c); cell proc_list(const cells& c);
+//made by LSY
+bool check_float(const cellit& start, const cellit& end) {
+    for (cellit i = start; i != end; i++) {
+        if (isfloat(i->val)) {
+            return true;
+        }
+    }
+    return false;
+}
 
 
-////////////////////// parse, read and user interaction
-list<string> tokenize(const string& str); cell atom(const string& token); cell read_from(list<string>& tokens);
-cell read(const string& s); string to_string(const cell& exp); void repl(const string& prompt, environment* env);
-void add_globals(environment& env); cell eval(cell x, environment* env);
-
-/*
-function define
-*/
 
 ////////////////////// built-in primitive procedures
 
@@ -268,6 +274,21 @@ cell proc_list(const cells& c)
     return result;
 }
 
+// define the bare minimum set of primintives necessary to pass the unit tests
+void add_globals(environment& env)
+{
+    //env배열은 map<string, cell>로 이루어져 있다.
+    env["nil"] = nil;   env["#f"] = false_sym;  env["#t"] = true_sym;
+    env["append"] = cell(&proc_append);   env["car"] = cell(&proc_car);
+    env["cdr"] = cell(&proc_cdr);      env["cons"] = cell(&proc_cons);
+    env["length"] = cell(&proc_length);   env["list"] = cell(&proc_list);
+    env["null?"] = cell(&proc_nullp);    env["+"] = cell(&proc_add);
+    env["-"] = cell(&proc_sub);      env["*"] = cell(&proc_mul);
+    env["/"] = cell(&proc_div);      env[">"] = cell(&proc_greater);
+    env["<"] = cell(&proc_less);     env["<="] = cell(&proc_less_equal);
+}
+
+
 ////////////////////// eval
 //이게 가장 중요하다 하.
 cell eval(cell x, environment* env){
@@ -278,7 +299,6 @@ cell eval(cell x, environment* env){
     if (x.list.empty())
         return nil;
     if (x.list[0].type == Symbol) {
-        /*
         if (x.list[0].val[0] == '\'') {
             //이 코드 버그 날 가능성 높음. 주의
             if (x.list[0].val.size() == 2) {
@@ -287,13 +307,13 @@ cell eval(cell x, environment* env){
                 return x.list[0];
             }
             return x.list[1];
-        }*/
-        if (x.list[0].val == "quote") return x.list[1];//'(x y z) -> (x y z)
+        }
+        //if (x.list[0].val == "quote") return x.list[1];//'(x y z) -> (x y z)
         if (x.list[0].val == "if")          // (if test conseq [alt])
             return eval(eval(x.list[1], env).val == "#f" ? (x.list.size() < 4 ? nil : x.list[3]) : x.list[2], env);
         if (x.list[0].val == "set!")        // (set! var exp)
             return env->find(x.list[1].val)[x.list[1].val] = eval(x.list[2], env);
-        if (x.list[0].val == "setq")      // (setq var exp)
+        if (x.list[0].val == "define")      // (define var exp)
             return (*env)[x.list[1].val] = eval(x.list[2], env);
         if (x.list[0].val == "lambda") {    // (lambda (var*) exp)
             x.type = Lambda;
@@ -331,57 +351,12 @@ cell eval(cell x, environment* env){
     exit(1);
 }
 
-// return given mumber as a string
-string str(long n) {
-    ostringstream os;
-    os << n;
-    return os.str();
-}
-
-// return true iff given character is '0'..'9'
-bool isdig(char c) {
-    return isdigit(static_cast<unsigned char>(c)) != 0;
-}
-
-//made by LSY
-bool isfloat(string c) {
-    return c.find('.') == string::npos ? false : true;
-}
-
-//made by LSY
-bool check_float(const cellit& start, const cellit& end) {
-    for (cellit i = start; i != end; i++) {
-        if (isfloat(i->val)) {
-            return true;
-        }
-    }
-    return false;
-}
-
 
 ////////////////////// parse, read and user interaction
 
-// the default read-eval-print-loop
-void repl(const string& prompt, environment* env)
-{
-    while (true) {
-        cout << prompt;
-        string line; getline(cin, line);
-        cout << to_string(eval(read(line), env)) << endl;
-    }
-}
-
-// return the Lisp expression represented by the given string
-cell read(const string& s)
-{
-    //list template는 양방향 연결리스트를 사용한다.
-    list<string> tokens(tokenize(s));
-    return read_from(tokens);
-}
-
 // convert given string to list of tokens
 // 가장 중요한 함수인듯.
-list<string> tokenize(const string& str) {
+list<string> tokenize(const string& str){
     list<string> tokens;
     const char* s = str.c_str();
     while (*s) {
@@ -392,7 +367,7 @@ list<string> tokenize(const string& str) {
         if (*s == '(' || *s == ')')
             /*
             *s++의 수행 순서
-            1. s++가 먼저 수행된다.
+            1. s++가 먼저 수행된다. 
             2. (*s)가 수행된다.
             */
             tokens.push_back(*s++ == '(' ? "(" : ")");
@@ -408,8 +383,8 @@ list<string> tokenize(const string& str) {
                  c++에서는 pointer와 iterator는 같은것으로 취급
                  [first,last)만큼의 substring을 만들어 준다.
 
-                 따라서 abcdef라는 문자열의 s포인터는 b에 있고,
-                 t포인터는 e에 있다고 하면
+                 따라서 abcdef라는 문자열의 s포인터는 b에 있고, 
+                 t포인터는 e에 있다고 하면 
                  string(s, t) = bcd  -> [b, e)
             */
 
@@ -420,9 +395,18 @@ list<string> tokenize(const string& str) {
     return tokens;
 }
 
+// numbers become Numbers; every other token is a Symbol
+cell atom(const string& token){
+    //정수이면 number라고 한다. 두번째 조건문은 -인 경우도 처리
+    //따라서 소수를 처리하려면 이쪽 부분을 변형해야 할 듯
+    if (isdig(token[0]) || (token[0] == '-' && isdig(token[1])))
+        return cell(Number, token);
+    return cell(Symbol, token);
+}
+
 // return the Lisp expression in the given tokens
 // 사실 이게 더중요한듯
-cell read_from(list<string>& tokens) {
+cell read_from(list<string>& tokens){
     //list.front(): 첫번째 원소를 반환
     const string token(tokens.front());
 
@@ -441,13 +425,12 @@ cell read_from(list<string>& tokens) {
         return atom(token);
 }
 
-// numbers become Numbers; every other token is a Symbol
-cell atom(const string& token) {
-    //정수이면 number라고 한다. 두번째 조건문은 -인 경우도 처리
-    //따라서 소수를 처리하려면 이쪽 부분을 변형해야 할 듯
-    if (isdig(token[0]) || (token[0] == '-' && isdig(token[1])))
-        return cell(Number, token);
-    return cell(Symbol, token);
+// return the Lisp expression represented by the given string
+cell read(const string& s)
+{
+    //list template는 양방향 연결리스트를 사용한다.
+    list<string> tokens(tokenize(s));
+    return read_from(tokens);
 }
 
 // convert given cell to a Lisp-readable string
@@ -468,18 +451,14 @@ string to_string(const cell& exp)
     return exp.val;
 }
 
-// define the bare minimum set of primintives necessary to pass the unit tests
-void add_globals(environment& env)
+// the default read-eval-print-loop
+void repl(const string& prompt, environment* env)
 {
-    //env배열은 map<string, cell>로 이루어져 있다.
-    env["nil"] = nil;   env["#f"] = false_sym;  env["#t"] = true_sym;
-    env["append"] = cell(&proc_append);   env["car"] = cell(&proc_car);
-    env["cdr"] = cell(&proc_cdr);      env["cons"] = cell(&proc_cons);
-    env["length"] = cell(&proc_length);   env["list"] = cell(&proc_list);
-    env["null?"] = cell(&proc_nullp);    env["+"] = cell(&proc_add);
-    env["-"] = cell(&proc_sub);      env["*"] = cell(&proc_mul);
-    env["/"] = cell(&proc_div);      env[">"] = cell(&proc_greater);
-    env["<"] = cell(&proc_less);     env["<="] = cell(&proc_less_equal);
+    while (true) {
+        cout << prompt;
+        string line; getline(cin, line);
+        cout << to_string(eval(read(line), env)) << endl;
+    }
 }
 
 int main()
