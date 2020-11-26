@@ -5,6 +5,8 @@ LispInterpreter_in_C
 물론 학점은 책임지지 않습니다.  
 -CAU-
 
+- lisp interpreter를 실행하려면 cmd에 sbcl을 입력하세요
+
 ***
 
 ## 1.	LISP의 산술 연산 
