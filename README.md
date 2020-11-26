@@ -7,7 +7,7 @@ LispInterpreter_in_C
 
 ***
 
-## 1.	LISP의 산술 연산
+## 1.	LISP의 산술 연산 <span style="color:red">Finish!</span>   
 * 사칙 연산(+, -, *, / )  
 다음은 3+5의 계산과 (3+(5*6))의 계산이다.
 
@@ -19,7 +19,7 @@ LispInterpreter_in_C
 ***
 
 ## 2. LISP의 기본 함수
-*	SETQ : 심볼에 값을 저장(Binding)  
+*	SETQ : 심볼에 값을 저장(Binding)  <span style="color:red">Finish!</span>   
 
 
   > -> (SETQ X 3);  X에 3을 저장한다  
@@ -27,7 +27,7 @@ LispInterpreter_in_C
 
 
 *	LIST : 원소들을 모아서 새로운 리스트 구조를 생성해 내는 함수이다.  `를 안붙이면 그 값을 계산해서 리스트에 넣는다.  
-
+<span style="color:red">Finish!</span>   
 
   > -> (SETQ X 5);  X에 5를 저장  
   5  
@@ -37,6 +37,7 @@ LispInterpreter_in_C
 
 
 *	CAR : 리스트의 첫번째 원소를 가져온다.  
+<span style="color:red">Finish!</span>   
 
   > -> (CAR '(X Y Z));   리스트 (X Y Z)의 첫 번째 원소인 X가 결과로 나옴.  
   X  
@@ -45,14 +46,17 @@ LispInterpreter_in_C
 
 
 *	CDR : 리스트의 첫번째 원소를 제외한 나머지를 결과로 생성한다.  
+<span style="color:red">Finish!</span>   
   > -> (CDR '(X Y Z));   리스트 (Y Z)가 결과로 나옴.  
   (Y Z)
 
 
 *	CAR과 CDR을 혼합 사용할 수 있다
+<span style="color:red">Finish!</span>   
   > -> (SETQ X ‘(1 2 3))  
   (1 2 3)
   
+  <span style="color:red">Finish!</span>   
   > -> (CAR (CDR (CDR X)));  리스트 X에서 세번째 원소를 구한다   
   3  
   
