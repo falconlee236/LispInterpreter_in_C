@@ -103,6 +103,8 @@ cell proc_less_equal(const cells& c); cell proc_length(const cells& c); cell pro
 cell proc_car(const cells& c); cell proc_cdr(const cells& c); cell proc_append(const cells& c);
 cell proc_cons(const cells& c); cell proc_list(const cells& c);
 
+/*insert user_define func*/
+cell proc_caddr(const cells& c);
 
 ////////////////////// parse, read and user interaction
 list<string> tokenize(const string& str); cell atom(const string& token); cell read_from(list<string>& tokens);
@@ -250,6 +252,15 @@ cell proc_cdr(const cells& c)
     cell result(c[0]);
     result.list.erase(result.list.begin());
     return result;
+}
+
+cell proc_caddr(const cells& c) { 
+    if (c[0].list.size() < 3)
+        return nil;
+    cell result(c[0]);
+    result.list.erase(result.list.begin());
+    result.list.erase(result.list.begin());
+    return result.list[0];
 }
 
 cell proc_append(const cells& c)
@@ -447,6 +458,9 @@ void add_globals(environment& env)
     env["-"] = cell(&proc_sub);      env["*"] = cell(&proc_mul);
     env["/"] = cell(&proc_div);      env[">"] = cell(&proc_greater);
     env["<"] = cell(&proc_less);     env["<="] = cell(&proc_less_equal);
+
+    /*LSY insert*/
+    env["caddr"] = cell(&proc_caddr);
 }
 
 int main()
