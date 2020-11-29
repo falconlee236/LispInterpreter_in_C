@@ -46,6 +46,7 @@ typedef cells::const_iterator cellit;
 const cell false_sym(Symbol, "false");
 const cell true_sym(Symbol, "true"); // anything that isn't false_sym is true
 const cell nil(Symbol, "nil");
+const cell error(Symbol, "ERROR");
 
 
 ////////////////////// environment
@@ -285,11 +286,6 @@ cell proc_list(const cells& c)
     return result;
 }
 
-cell proc_nth(const cells& c) {
-    cell result(List);
-    return result;
-}
-
 cell proc_reverse(const cells& c) {
     cell result(List);
     result.list = c[0].list;
@@ -310,15 +306,22 @@ cell eval(cell x, environment* env) {
     if (x.list[0].type == Symbol || x.val == "\'") {
         if (x.val == "\'")
             return x.list[0];
-        /*
-        if (x.list[0].val == "\'")
-            return x.list[1];
-            */
-        //if (x.list[0].val == "quote") return x.list[1];//'(x y z) -> (x y z)
         if (lowercase(x.list[0].val) == "if")         // (if test conseq [alt])
             return eval(eval(x.list[1], env).val == "#f" ? (x.list.size() < 4 ? nil : x.list[3]) : x.list[2], env);
         if (lowercase(x.list[0].val) == "setq")      // (setq var exp)
             return (*env)[x.list[1].val] = eval(x.list[2], env);
+        /*nth 추가*/
+        if (lowercase(x.list[0].val) == "nth") {
+            if (x.list[2].type != List || x.list[2].list[0].type == Symbol)
+                return error;
+
+            cells result(x.list[2].list[0].list);
+            int val = stoi(x.list[1].val);
+
+            if (result.size() < val)
+                return nil;
+            return result[val];
+        }
     }
     // (proc exp*) ->  연산자
     cell proc(eval(x.list[0], env));
@@ -472,8 +475,9 @@ void add_globals(environment& env)
     env["<"] = cell(&proc_less);     env["<="] = cell(&proc_less_equal);
 
     /*LSY insert*/
-    env["caddr"] = cell(&proc_caddr); env["nth"] = cell(&proc_nth);
+    env["caddr"] = cell(&proc_caddr);
     env["reverse"] = cell(&proc_reverse);
+    env["ERROR"] = error;
 }
 
 int main()
