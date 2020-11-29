@@ -263,8 +263,8 @@ cell proc_caddr(const cells& c) {
     return result.list[0];
 }
 
-cell proc_append(const cells& c)
-{
+//3개 이상은 안됨 -> 수정 필요
+cell proc_append(const cells& c){
     cell result(List);
     result.list = c[0].list;
     for (cellit i = c[1].list.begin(); i != c[1].list.end(); ++i) result.list.push_back(*i);
@@ -282,6 +282,18 @@ cell proc_cons(const cells& c)
 cell proc_list(const cells& c)
 {
     cell result(List); result.list = c;
+    return result;
+}
+
+cell proc_nth(const cells& c) {
+    cell result(List);
+    return result;
+}
+
+cell proc_reverse(const cells& c) {
+    cell result(List);
+    result.list = c[0].list;
+    reverse(result.list.begin(), result.list.end());
     return result;
 }
 
@@ -460,7 +472,8 @@ void add_globals(environment& env)
     env["<"] = cell(&proc_less);     env["<="] = cell(&proc_less_equal);
 
     /*LSY insert*/
-    env["caddr"] = cell(&proc_caddr);
+    env["caddr"] = cell(&proc_caddr); env["nth"] = cell(&proc_nth);
+    env["reverse"] = cell(&proc_reverse);
 }
 
 int main()
