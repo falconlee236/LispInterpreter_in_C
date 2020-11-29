@@ -264,11 +264,12 @@ cell proc_caddr(const cells& c) {
     return result.list[0];
 }
 
-//3개 이상은 안됨 -> 수정 필요
 cell proc_append(const cells& c){
     cell result(List);
     result.list = c[0].list;
-    for (cellit i = c[1].list.begin(); i != c[1].list.end(); ++i) result.list.push_back(*i);
+    for (int k = 1; k < c.size(); k++) {
+        for (cellit i = c[k].list.begin(); i != c[k].list.end(); ++i) result.list.push_back(*i);
+    }
     return result;
 }
 
