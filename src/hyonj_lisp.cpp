@@ -14,7 +14,7 @@ using namespace std;
 
 ////////////////////// cell
 
-enum cell_type { Symbol, Number, List, Proc};
+enum cell_type { Symbol, Number, List, Proc };
 
 struct environment; // forward declaration; cell and environment reference each other
 
@@ -241,6 +241,84 @@ cell proc_less_equal(const cells& c) {
     }
 
 }
+cell proc_greater_equal(const cells& c) {
+    bool flag = check_float(c.begin(), c.end());
+
+    if (flag) {
+        float n(stof(c[0].val));
+        for (cellit i = c.begin() + 1; i != c.end(); ++i)
+            if (n < stof(i->val))
+                return false_sym;
+        return true_sym;
+    }
+    else {
+        long n(atol(c[0].val.c_str()));
+        for (cellit i = c.begin() + 1; i != c.end(); ++i)
+            if (n > atol(i->val.c_str()))
+                return false_sym;
+        return true_sym;
+    }
+
+}
+cell proc_atom(const cells& c) {
+    if (c[0].type == Symbol) return true_sym;
+    else return false_sym;
+}
+cell proc_null(const cells& c) {
+    if (c[0].type == Symbol && c[0].val=="nil") return true_sym;
+    else return false_sym;
+}
+cell proc_numberp(const cells& c) {
+    if (c[0].type == Number) return true_sym;
+    else return false_sym;
+}
+cell proc_stringp(const cells& c) {
+    /**/
+}
+cell proc_zerop(const cells& c) {
+    bool flag = check_float(c.begin(), c.end());
+
+    if (flag) {
+        float n(stof(c[0].val));
+        if (n != 0)
+            return false_sym;
+        return true_sym;
+    }
+    else {
+        return error;
+    }
+}
+cell proc_minusp(const cells& c) {
+    bool flag = check_float(c.begin(), c.end());
+
+    if (flag) {
+        float n(stof(c[0].val));
+        if (n >= 0)
+            return false_sym;
+        return true_sym;
+    }
+    else {
+        return error;
+    }
+}
+cell proc_equal(const cells& c) {
+    bool flag = check_float(c.begin(), c.end());
+
+    if (flag) {
+        float n(stof(c[0].val));
+        for (cellit i = c.begin() + 1; i != c.end(); ++i)
+            if (n == stof(i->val))
+                return false_sym;
+        return true_sym;
+    }
+    else {
+        long n(atol(c[0].val.c_str()));
+        for (cellit i = c.begin() + 1; i != c.end(); ++i)
+            if (n == atol(i->val.c_str()))
+                return false_sym;
+        return true_sym;
+    }
+}
 
 cell proc_length(const cells& c) { return cell(Number, str(c[0].list.size())); }
 cell proc_nullp(const cells& c) { return c[0].list.empty() ? true_sym : false_sym; }
@@ -255,7 +333,7 @@ cell proc_cdr(const cells& c)
     return result;
 }
 
-cell proc_caddr(const cells& c) { 
+cell proc_caddr(const cells& c) {
     if (c[0].list.size() < 3)
         return nil;
     cell result(c[0]);
@@ -336,7 +414,7 @@ cell eval(cell x, environment* env) {
     if (x.type == Symbol) {
         string lower_str = lowercase(x.val);
         return env->find(lower_str)[lower_str];
-    }    
+    }
     if (x.type == Number)
         return x;
     if (x.list.empty())
@@ -507,13 +585,18 @@ void add_globals(environment& env)
     env["append"] = cell(&proc_append);   env["car"] = cell(&proc_car);
     env["cdr"] = cell(&proc_cdr);      env["cons"] = cell(&proc_cons);
     env["length"] = cell(&proc_length);   env["list"] = cell(&proc_list);
+    env["atom"] = cell(&proc_atom); env["null"] = cell(&proc_null);
+    env["numberp"] = cell(&proc_numberp); env["zerop"] = cell(&proc_zerop);
+    env["minusp"] = cell(&proc_minusp);   env["equal"] = cell(&proc_equal);
+
+
     env["member"] = cell(&proc_member);   env["assoc"] = cell(&proc_assoc);
     env["remove"] = cell(&proc_remove);   env["subst"] = cell(&proc_subst);
-    env["null?"] = cell(&proc_nullp);    env["+"] = cell(&proc_add);
+    env["null?"] = cell(&proc_nullp);    
     env["-"] = cell(&proc_sub);      env["*"] = cell(&proc_mul);
-    env["/"] = cell(&proc_div);      env[">"] = cell(&proc_greater);
-    env["<"] = cell(&proc_less);     env["<="] = cell(&proc_less_equal);
-
+    env["/"] = cell(&proc_div);      env["+"] = cell(&proc_add);
+    env[">"] = cell(&proc_greater);  env["<"] = cell(&proc_less);
+    env["<="] = cell(&proc_less_equal); env[">="] = cell(&proc_greater_equal);
     /*LSY insert*/
     env["caddr"] = cell(&proc_caddr);
     env["reverse"] = cell(&proc_reverse);
