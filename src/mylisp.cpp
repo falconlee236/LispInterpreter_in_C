@@ -8,10 +8,6 @@
 
 using namespace std;
 
-/*
-원본 코드는 냅두고 여러가지 코드 수정을 하는 버전
-*/
-
 ////////////////////// cell
 
 enum cell_type { Symbol, Number, List, Proc};
@@ -20,13 +16,8 @@ struct environment; // forward declaration; cell and environment reference each 
 
 // a variant that can hold any kind of lisp value
 struct cell {
-    /*
-    함수 포인터, cell 함수이름(const vector<cell>&)형태의 함수를 포인팅한다.
-    */
     typedef cell(*proc_type)(const vector<cell>&);
     typedef vector<cell>::const_iterator iter;
-
-    //map containor는 값을 key : value 형식으로 저장
     typedef map<string, cell> map;
 
     cell_type type;
@@ -324,7 +315,6 @@ cell eval(cell x, environment* env) {
             return result[val];
         }
     }
-    // (proc exp*) ->  연산자
     cell proc(eval(x.list[0], env));
     cells exps;
     for (cell::iter exp = x.list.begin() + 1; exp != x.list.end(); ++exp)
@@ -385,7 +375,6 @@ void repl(const string& prompt, environment* env)
 // return the Lisp expression represented by the given string
 cell read(const string& s)
 {
-    //list template는 양방향 연결리스트를 사용한다.
     list<string> tokens(tokenize(s));
     return read_from(tokens);
 }
@@ -422,7 +411,6 @@ cell read_from(list<string>& tokens) {
     const string token(tokens.front());
     tokens.pop_front();
 
-    // (로 시작하면 List로 판단
     if (token == "(") {
         cell c(List);
         while (tokens.front() != ")")
@@ -465,7 +453,6 @@ string to_string(const cell& exp)
 // define the bare minimum set of primintives necessary to pass the unit tests
 void add_globals(environment& env)
 {
-    //env배열은 map<string, cell>로 이루어져 있다.
     env["nil"] = nil;   env["#f"] = false_sym;  env["#t"] = true_sym;
     env["append"] = cell(&proc_append);   env["car"] = cell(&proc_car);
     env["cdr"] = cell(&proc_cdr);      env["cons"] = cell(&proc_cons);
