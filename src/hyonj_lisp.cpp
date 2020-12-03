@@ -8,10 +8,6 @@
 
 using namespace std;
 
-/*
-???? ???? ????? ???????? ??? ?????? ??? ????
-*/
-
 ////////////////////// cell
 
 enum cell_type { Symbol, Number, List, Proc};
@@ -20,13 +16,8 @@ struct environment; // forward declaration; cell and environment reference each 
 
 // a variant that can hold any kind of lisp value
 struct cell {
-    /*
-    ??? ??????, cell ??????(const vector<cell>&)?????? ????? ?????????.
-    */
     typedef cell(*proc_type)(const vector<cell>&);
     typedef vector<cell>::const_iterator iter;
-
-    //map containor?? ???? key : value ???????? ????
     typedef map<string, cell> map;
 
     cell_type type;
@@ -133,7 +124,6 @@ cell proc_add(const cells& c) {
     }
 
 }
-
 cell proc_sub(const cells& c) {
     bool flag = check_float(c.begin(), c.end());
 
@@ -149,7 +139,6 @@ cell proc_sub(const cells& c) {
     }
 
 }
-
 cell proc_mul(const cells& c) {
     bool flag = check_float(c.begin(), c.end());
 
@@ -165,7 +154,6 @@ cell proc_mul(const cells& c) {
     }
 
 }
-
 cell proc_div(const cells& c) {
     bool flag = check_float(c.begin(), c.end());
 
@@ -181,7 +169,6 @@ cell proc_div(const cells& c) {
     }
 
 }
-
 cell proc_greater(const cells& c) {
     bool flag = check_float(c.begin(), c.end());
 
@@ -201,7 +188,6 @@ cell proc_greater(const cells& c) {
     }
 
 }
-
 cell proc_less(const cells& c) {
     bool flag = check_float(c.begin(), c.end());
 
@@ -221,7 +207,6 @@ cell proc_less(const cells& c) {
     }
 
 }
-
 cell proc_less_equal(const cells& c) {
     bool flag = check_float(c.begin(), c.end());
 
@@ -241,11 +226,9 @@ cell proc_less_equal(const cells& c) {
     }
 
 }
-
 cell proc_length(const cells& c) { return cell(Number, str(c[0].list.size())); }
 cell proc_nullp(const cells& c) { return c[0].list.empty() ? true_sym : false_sym; }
 cell proc_car(const cells& c) { return c[0].list[0]; }
-
 cell proc_cdr(const cells& c)
 {
     if (c[0].list.size() < 2)
@@ -254,7 +237,6 @@ cell proc_cdr(const cells& c)
     result.list.erase(result.list.begin());
     return result;
 }
-
 cell proc_caddr(const cells& c) { 
     if (c[0].list.size() < 3)
         return nil;
@@ -263,8 +245,6 @@ cell proc_caddr(const cells& c) {
     result.list.erase(result.list.begin());
     return result.list[0];
 }
-
-
 cell proc_append(const cells& c) {
     cell result(List);
     result.list = c[0].list;
@@ -273,7 +253,6 @@ cell proc_append(const cells& c) {
     }
     return result;
 }
-
 cell proc_cons(const cells& c)
 {
     cell result(List);
@@ -281,20 +260,17 @@ cell proc_cons(const cells& c)
     for (cellit i = c[1].list.begin(); i != c[1].list.end(); ++i) result.list.push_back(*i);
     return result;
 }
-
 cell proc_list(const cells& c)
 {
     cell result(List); result.list = c;
     return result;
 }
-
 cell proc_reverse(const cells& c) {
     cell result(List);
     result.list = c[0].list;
     reverse(result.list.begin(), result.list.end());
     return result;
 }
-
 cell proc_member(const cells& c) {
     cell result(List);
     bool find = false;
@@ -348,7 +324,6 @@ cell eval(cell x, environment* env) {
             return eval(eval(x.list[1], env).val == "#f" ? (x.list.size() < 4 ? nil : x.list[3]) : x.list[2], env);
         if (lowercase(x.list[0].val) == "setq")      // (setq var exp)
             return (*env)[x.list[1].val] = eval(x.list[2], env);
-        /*nth ???*/
         if (lowercase(x.list[0].val) == "nth") {
             if (x.list[2].type != List || x.list[2].list[0].type == Symbol)
                 return error;
@@ -361,7 +336,6 @@ cell eval(cell x, environment* env) {
             return result[val];
         }
     }
-    // (proc exp*) ->  ??????
     cell proc(eval(x.list[0], env));
     cells exps;
     for (cell::iter exp = x.list.begin() + 1; exp != x.list.end(); ++exp)
@@ -422,7 +396,6 @@ void repl(const string& prompt, environment* env)
 // return the Lisp expression represented by the given string
 cell read(const string& s)
 {
-    //list template?? ????? ????????? ??????.
     list<string> tokens(tokenize(s));
     return read_from(tokens);
 }
@@ -459,7 +432,6 @@ cell read_from(list<string>& tokens) {
     const string token(tokens.front());
     tokens.pop_front();
 
-    // (?? ??????? List?? ???
     if (token == "(") {
         cell c(List);
         while (tokens.front() != ")")
@@ -502,7 +474,6 @@ string to_string(const cell& exp)
 // define the bare minimum set of primintives necessary to pass the unit tests
 void add_globals(environment& env)
 {
-    //env?עק?? map<string, cell>?? ?????? ???.
     env["nil"] = nil;   env["#f"] = false_sym;  env["#t"] = true_sym;
     env["append"] = cell(&proc_append);   env["car"] = cell(&proc_car);
     env["cdr"] = cell(&proc_cdr);      env["cons"] = cell(&proc_cons);
