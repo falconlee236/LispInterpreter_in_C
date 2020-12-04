@@ -73,7 +73,6 @@ struct environment {
         for (cellit p = parms.begin(); p != parms.end(); ++p)
             env_[p->val] = *a++;
     }
-
     // return a reference to the innermost environment where 'var' appears
     map& find(const string& var)
     {
