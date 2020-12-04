@@ -10,7 +10,7 @@ using namespace std;
 
 ////////////////////// cell
 
-enum cell_type { Symbol, Number, List, Proc };
+enum cell_type { Symbol, Number, List, Proc, String};
 
 struct environment; // forward declaration; cell and environment reference each other
 
@@ -352,7 +352,7 @@ cell proc_equal(const cells& c) {
 	}
 }
 cell proc_stringp(const cells& c) {
-	return true_sym;
+	return c[0].type == String ? true_sym : nil;
 }
 
 
@@ -366,11 +366,17 @@ cell eval(cell x, environment* env) {
     }
     if (x.type == Number)
         return x;
+	if (x.type == String)
+		return x;
     if (x.list.empty())
         return nil;
-    if (x.list[0].type == Symbol || x.val == "\'") {
-        if (x.val == "\'")
+    if (x.list[0].type == Symbol || x.val == "\'" || x.val == "\"" || x.val == "#") {
+        if (x.val == "\'" || x.val == "#")
             return x.list[0];
+		if (x.val == "\"") {
+			x.list[0].val.pop_back();
+			return x.list[0];
+		}
         if (lowercase(x.list[0].val) == "if")         // (if test conseq [alt])
             return eval(eval(x.list[1], env).val == "#f" ? (x.list.size() < 4 ? nil : x.list[3]) : x.list[2], env);
         if (lowercase(x.list[0].val) == "setq")      // (setq var exp)
@@ -462,10 +468,24 @@ list<string> tokenize(const string& str) {
 
         if (*s == '(' || *s == ')')
             tokens.push_back(*s++ == '(' ? "(" : ")");
-        else if (*s == '\'') {
-            tokens.push_back("\'");
-            s++;
-        }
+		else if (*s == '\'') {
+			tokens.push_back("\'");
+			s++;
+		}
+		else if (*s == '\"') {
+			tokens.push_back("\"");
+			s++;
+			const char* t = s;
+			while (*t && *t != '(' && *t != ')') {
+				++t;
+			}
+			tokens.push_back(lowercase(string(s, t)));
+			s = t;
+		}
+		else if (*s == '#') {
+			tokens.push_back("#");
+			s++;
+		}
         else {
             const char* t = s;
             while (*t && *t != ' ' && *t != '(' && *t != ')') {
@@ -495,14 +515,26 @@ cell read_from(list<string>& tokens) {
         c.list.push_back(read_from(tokens));
         return c;
     }
+	else if (token == "\"") {
+		cell c(List, "\"");
+		c.list.push_back(read_from(tokens));
+		return c;
+	}
+	else if (token == "#") {
+		cell c(List, "#");
+		c.list.push_back(read_from(tokens));
+		return c;
+	}
     else
         return atom(token);
 }
 
 // numbers become Numbers; every other token is a Symbol
 cell atom(const string& token) {
-    if (isdig(token[0]) || (token[0] == '-' && isdig(token[1])))
-        return cell(Number, token);
+	if (isdig(token[0]) || (token[0] == '-' && isdig(token[1])))
+		return cell(Number, token);
+	else if (!(token.find('\"') == string::npos))
+		return cell(String, token);
     return cell(Symbol, token);
 }
 
