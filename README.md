@@ -152,11 +152,15 @@ LISP에서 Predicate가 NIL을 반환하면 거짓(false)로 인정하고 NIL이
   > (>= X Y) ;  X >= Y 이면 참(true)을 반환함.  
   
   > (STRINGP X) ;  X가 STRING일 때만 참(true)을 반환함.  
+  
   > -> (STRINGP "A")   
-  T
+  T  
+
   > -> (SETQ A "HI THERE")  
   > (STRINGP A)  
-  T  
+  T   
+  
+  
   > (STRINGP #\A) ;  문자  
   NIL  
   > (STRINGP '(A B C)) ;  리스트  
