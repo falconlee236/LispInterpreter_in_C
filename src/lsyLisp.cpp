@@ -345,6 +345,9 @@ cell proc_equal(const cells& c) {
 cell proc_stringp(const cells& c) {
 	return c[0].type == String ? true_sym : nil;
 }
+cell proc_print(const cells& c) {
+	return c[0];
+}
 
 
 
@@ -563,6 +566,7 @@ void add_globals(environment& env)
     env["atom"] = cell(&proc_atom); env["numberp"] = cell(&proc_numberp);
 	env["zerop"] = cell(&proc_zerop); env["minusp"] = cell(&proc_minusp);
 	env["equal"] = cell(&proc_equal); env["stringp"] = cell(&proc_stringp);
+	env["print"] = cell(&proc_print);
 }
 
 int main()
