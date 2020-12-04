@@ -88,15 +88,6 @@ bool isfloat(string c);
 bool check_float(const cellit& start, const cellit& end);
 string lowercase(string up_string);
 
-////////////////////// built-in primitive procedures
-cell proc_add(const cells& c); cell proc_sub(const cells& c); cell proc_mul(const cells& c);
-cell proc_div(const cells& c); cell proc_greater(const cells& c); cell proc_less(const cells& c);
-cell proc_less_equal(const cells& c); cell proc_length(const cells& c); cell proc_nullp(const cells& c);
-cell proc_car(const cells& c); cell proc_cdr(const cells& c); cell proc_append(const cells& c);
-cell proc_cons(const cells& c); cell proc_list(const cells& c);
-
-/*insert user_define func*/
-cell proc_caddr(const cells& c);
 
 ////////////////////// parse, read and user interaction
 list<string> tokenize(const string& str); cell atom(const string& token); cell read_from(list<string>& tokens);
@@ -378,7 +369,7 @@ cell eval(cell x, environment* env) {
 			return x.list[0];
 		}
         if (lowercase(x.list[0].val) == "if")         // (if test conseq [alt])
-            return eval(eval(x.list[1], env).val == "#f" ? (x.list.size() < 4 ? nil : x.list[3]) : x.list[2], env);
+            return eval(eval(x.list[1], env).val == "false" ? (x.list.size() < 4 ? nil : x.list[3]) : x.list[2], env);
         if (lowercase(x.list[0].val) == "setq")      // (setq var exp)
             return (*env)[x.list[1].val] = eval(x.list[2], env);
         if (lowercase(x.list[0].val) == "nth") {
