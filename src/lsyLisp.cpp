@@ -80,7 +80,7 @@ private:
     environment* outer_; // next adjacent outer env, or 0 if there are no further environments
 };
 
-
+//(+ 3/4 3) 15/4
 ////////////////////// user-define fucntions
 string str(long n);
 bool isdig(char c);
@@ -225,6 +225,24 @@ cell proc_less_equal(const cells& c) {
     }
 
 }
+cell proc_greater_equal(const cells& c) {
+	bool flag = check_float(c.begin(), c.end());
+
+	if (flag) {
+		float n(stof(c[0].val));
+		for (cellit i = c.begin() + 1; i != c.end(); ++i)
+			if (n < stof(i->val))
+				return false_sym;
+		return true_sym;
+	}
+	else {
+		long n(atol(c[0].val.c_str()));
+		for (cellit i = c.begin() + 1; i != c.end(); ++i)
+			if (n < atol(i->val.c_str()))
+				return false_sym;
+		return true_sym;
+	}
+}
 cell proc_numberp(const cells& c) { return c[0].type == Number ? true_sym : false_sym; }
 cell proc_atom(const cells& c) { return c[0].type == Symbol ? true_sym : false_sym; }
 cell proc_length(const cells& c) { return cell(Number, str(c[0].list.size())); }
@@ -316,6 +334,24 @@ cell proc_zerop(const cells& c) {
 	return c[0].val == "0" ? true_sym : false_sym;
 }
 cell proc_equal(const cells& c) {
+	bool flag = check_float(c.begin(), c.end());
+
+	if (flag) {
+		float n(stof(c[0].val));
+		for (cellit i = c.begin() + 1; i != c.end(); ++i)
+			if (n == stof(i->val))
+				return true_sym;
+		return false_sym;
+	}
+	else {
+		long n(atol(c[0].val.c_str()));
+		for (cellit i = c.begin() + 1; i != c.end(); ++i)
+			if (n == atol(i->val.c_str()))
+				return true_sym;
+		return false_sym;
+	}
+}
+cell proc_stringp(const cells& c) {
 	return true_sym;
 }
 
@@ -435,7 +471,7 @@ list<string> tokenize(const string& str) {
             while (*t && *t != ' ' && *t != '(' && *t != ')') {
                 ++t;
             }
-            tokens.push_back(string(s, t));
+            tokens.push_back(lowercase(string(s, t)));
             s = t;
         }
     }
@@ -499,11 +535,11 @@ void add_globals(environment& env)
     env["-"] = cell(&proc_sub);      env["*"] = cell(&proc_mul);
     env["/"] = cell(&proc_div);      env[">"] = cell(&proc_greater);
     env["<"] = cell(&proc_less);     env["<="] = cell(&proc_less_equal);
-    env["caddr"] = cell(&proc_caddr); env["reverse"] = cell(&proc_reverse);
-    env["ERROR"] = error;
+	env[">="] = cell(&proc_greater_equal); env["caddr"] = cell(&proc_caddr); 
+	env["reverse"] = cell(&proc_reverse); env["ERROR"] = error;
     env["atom"] = cell(&proc_atom); env["numberp"] = cell(&proc_numberp);
 	env["zerop"] = cell(&proc_zerop); env["minusp"] = cell(&proc_minusp);
-	env["equal"] = cell(&proc_equal);
+	env["equal"] = cell(&proc_equal); env["stringp"] = cell(&proc_stringp);
 }
 
 int main()
