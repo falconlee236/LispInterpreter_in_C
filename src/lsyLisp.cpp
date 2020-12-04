@@ -106,7 +106,6 @@ void add_globals(environment& env); cell eval(cell x, environment* env);
 /*
 function define
 */
-
 ////////////////////// built-in primitive procedures
 
 cell proc_add(const cells& c) {
@@ -308,6 +307,17 @@ cell proc_subst(const cells& c) {
     }
     return result;
 }
+cell proc_minusp(const cells& c) {
+	if (c[0].type != Number) return error;
+	return c[0].val.find('-') == string::npos ? false_sym : true_sym;
+}
+cell proc_zerop(const cells& c) {
+	if (c[0].type != Number) return error;
+	return c[0].val == "0" ? true_sym : false_sym;
+}
+cell proc_equal(const cells& c) {
+	return true_sym;
+}
 
 
 
@@ -492,6 +502,8 @@ void add_globals(environment& env)
     env["caddr"] = cell(&proc_caddr); env["reverse"] = cell(&proc_reverse);
     env["ERROR"] = error;
     env["atom"] = cell(&proc_atom); env["numberp"] = cell(&proc_numberp);
+	env["zerop"] = cell(&proc_zerop); env["minusp"] = cell(&proc_minusp);
+	env["equal"] = cell(&proc_equal);
 }
 
 int main()
