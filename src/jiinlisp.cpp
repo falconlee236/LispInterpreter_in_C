@@ -8,10 +8,6 @@
 
 using namespace std;
 
-/*
-원본 코드는 냅두고 여러가지 코드 수정을 하는 버전
-*/
-
 ////////////////////// cell
 
 enum cell_type { Symbol, Number, List, Proc };
@@ -20,13 +16,8 @@ struct environment; // forward declaration; cell and environment reference each 
 
 // a variant that can hold any kind of lisp value
 struct cell {
-	/*
-	함수 포인터, cell 함수이름(const vector<cell>&)형태의 함수를 포인팅한다.
-	*/
 	typedef cell(*proc_type)(const vector<cell>&);
 	typedef vector<cell>::const_iterator iter;
-
-	//map containor는 값을 key : value 형식으로 저장
 	typedef map<string, cell> map;
 
 	cell_type type;
@@ -46,6 +37,7 @@ typedef cells::const_iterator cellit;
 const cell false_sym(Symbol, "false");
 const cell true_sym(Symbol, "true"); // anything that isn't false_sym is true
 const cell nil(Symbol, "nil");
+const cell error(Symbol, "ERROR");
 
 
 ////////////////////// environment
@@ -88,7 +80,7 @@ private:
 	environment* outer_; // next adjacent outer env, or 0 if there are no further environments
 };
 
-
+//(+ 3/4 3) 15/4
 ////////////////////// user-define fucntions
 string str(long n);
 bool isdig(char c);
@@ -103,6 +95,8 @@ cell proc_less_equal(const cells& c); cell proc_length(const cells& c); cell pro
 cell proc_car(const cells& c); cell proc_cdr(const cells& c); cell proc_append(const cells& c);
 cell proc_cons(const cells& c); cell proc_list(const cells& c);
 
+/*insert user_define func*/
+cell proc_caddr(const cells& c);
 
 ////////////////////// parse, read and user interaction
 list<string> tokenize(const string& str); cell atom(const string& token); cell read_from(list<string>& tokens);
@@ -112,7 +106,6 @@ void add_globals(environment& env); cell eval(cell x, environment* env);
 /*
 function define
 */
-
 ////////////////////// built-in primitive procedures
 
 cell proc_add(const cells& c) {
@@ -130,7 +123,6 @@ cell proc_add(const cells& c) {
 	}
 
 }
-
 cell proc_sub(const cells& c) {
 	bool flag = check_float(c.begin(), c.end());
 
@@ -146,7 +138,6 @@ cell proc_sub(const cells& c) {
 	}
 
 }
-
 cell proc_mul(const cells& c) {
 	bool flag = check_float(c.begin(), c.end());
 
@@ -162,7 +153,6 @@ cell proc_mul(const cells& c) {
 	}
 
 }
-
 cell proc_div(const cells& c) {
 	bool flag = check_float(c.begin(), c.end());
 
@@ -178,7 +168,6 @@ cell proc_div(const cells& c) {
 	}
 
 }
-
 cell proc_greater(const cells& c) {
 	bool flag = check_float(c.begin(), c.end());
 
@@ -198,7 +187,6 @@ cell proc_greater(const cells& c) {
 	}
 
 }
-
 cell proc_less(const cells& c) {
 	bool flag = check_float(c.begin(), c.end());
 
@@ -218,7 +206,6 @@ cell proc_less(const cells& c) {
 	}
 
 }
-
 cell proc_less_equal(const cells& c) {
 	bool flag = check_float(c.begin(), c.end());
 
@@ -238,11 +225,29 @@ cell proc_less_equal(const cells& c) {
 	}
 
 }
+cell proc_greater_equal(const cells& c) {
+	bool flag = check_float(c.begin(), c.end());
 
+	if (flag) {
+		float n(stof(c[0].val));
+		for (cellit i = c.begin() + 1; i != c.end(); ++i)
+			if (n < stof(i->val))
+				return false_sym;
+		return true_sym;
+	}
+	else {
+		long n(atol(c[0].val.c_str()));
+		for (cellit i = c.begin() + 1; i != c.end(); ++i)
+			if (n < atol(i->val.c_str()))
+				return false_sym;
+		return true_sym;
+	}
+}
+cell proc_numberp(const cells& c) { return c[0].type == Number ? true_sym : false_sym; }
+cell proc_atom(const cells& c) { return c[0].type == Symbol ? true_sym : false_sym; }
 cell proc_length(const cells& c) { return cell(Number, str(c[0].list.size())); }
-cell proc_nullp(const cells& c) { return c[0].list.empty() ? true_sym : false_sym; }
+cell proc_null(const cells& c) { return c[0].list.empty() ? true_sym : false_sym; }
 cell proc_car(const cells& c) { return c[0].list[0]; }
-
 cell proc_cdr(const cells& c)
 {
 	if (c[0].list.size() < 2)
@@ -251,15 +256,22 @@ cell proc_cdr(const cells& c)
 	result.list.erase(result.list.begin());
 	return result;
 }
-
-cell proc_append(const cells& c)
-{
+cell proc_caddr(const cells& c) {
+	if (c[0].list.size() < 3)
+		return nil;
+	cell result(c[0]);
+	result.list.erase(result.list.begin());
+	result.list.erase(result.list.begin());
+	return result.list[0];
+}
+cell proc_append(const cells& c) {
 	cell result(List);
 	result.list = c[0].list;
-	for (cellit i = c[1].list.begin(); i != c[1].list.end(); ++i) result.list.push_back(*i);
+	for (int k = 1; k < c.size(); k++) {
+		for (cellit i = c[k].list.begin(); i != c[k].list.end(); ++i) result.list.push_back(*i);
+	}
 	return result;
 }
-
 cell proc_cons(const cells& c)
 {
 	cell result(List);
@@ -267,12 +279,84 @@ cell proc_cons(const cells& c)
 	for (cellit i = c[1].list.begin(); i != c[1].list.end(); ++i) result.list.push_back(*i);
 	return result;
 }
-
 cell proc_list(const cells& c)
 {
 	cell result(List); result.list = c;
 	return result;
 }
+cell proc_reverse(const cells& c) {
+	cell result(List);
+	result.list = c[0].list;
+	reverse(result.list.begin(), result.list.end());
+	return result;
+}
+cell proc_member(const cells& c) {
+	cell result(List);
+	bool find = false;
+	for (cellit i = c[1].list.begin(); i != c[1].list.end(); ++i) {
+		if (i->val == c[0].val || find) {
+			find = true;
+			result.list.push_back(*i);
+		}
+	}
+	if (!find) return nil;
+	return result;
+}
+cell proc_assoc(const cells& c) {
+	for (cellit i = c[1].list.begin(); i != c[1].list.end(); ++i) {
+		if (i->list[0].val == c[0].val) {
+			return *i;
+		}
+	}
+	return nil;
+}
+cell proc_remove(const cells& c) {
+	cell result(List);
+	for (cellit i = c[1].list.begin(); i != c[1].list.end(); ++i) {
+		if (i->val != c[0].val) result.list.push_back(*i);
+	}
+	return result;
+}
+cell proc_subst(const cells& c) {
+	cell result(List);
+	for (cellit i = c[2].list.begin(); i != c[2].list.end(); ++i) {
+		if (i->val == c[1].val) result.list.push_back(c[0]);
+		else result.list.push_back(*i);
+	}
+	return result;
+}
+cell proc_minusp(const cells& c) {
+	if (c[0].type != Number) return error;
+	return c[0].val.find('-') == string::npos ? false_sym : true_sym;
+}
+cell proc_zerop(const cells& c) {
+	if (c[0].type != Number) return error;
+	return c[0].val == "0" ? true_sym : false_sym;
+}
+cell proc_equal(const cells& c) {
+	bool flag = check_float(c.begin(), c.end());
+
+	if (flag) {
+		float n(stof(c[0].val));
+		for (cellit i = c.begin() + 1; i != c.end(); ++i)
+			if (n == stof(i->val))
+				return true_sym;
+		return false_sym;
+	}
+	else {
+		long n(atol(c[0].val.c_str()));
+		for (cellit i = c.begin() + 1; i != c.end(); ++i)
+			if (n == atol(i->val.c_str()))
+				return true_sym;
+		return false_sym;
+	}
+}
+cell proc_stringp(const cells& c) {
+	return true_sym;
+}
+
+
+
 
 ////////////////////// eval
 cell eval(cell x, environment* env) {
@@ -287,17 +371,22 @@ cell eval(cell x, environment* env) {
 	if (x.list[0].type == Symbol || x.val == "\'") {
 		if (x.val == "\'")
 			return x.list[0];
-		/*
-		if (x.list[0].val == "\'")
-			return x.list[1];
-			*/
-			//if (x.list[0].val == "quote") return x.list[1];//'(x y z) -> (x y z)
 		if (lowercase(x.list[0].val) == "if")         // (if test conseq [alt])
 			return eval(eval(x.list[1], env).val == "#f" ? (x.list.size() < 4 ? nil : x.list[3]) : x.list[2], env);
 		if (lowercase(x.list[0].val) == "setq")      // (setq var exp)
 			return (*env)[x.list[1].val] = eval(x.list[2], env);
+		if (lowercase(x.list[0].val) == "nth") {
+			if (x.list[2].type != List || x.list[2].list[0].type == Symbol)
+				return error;
+
+			cells result(x.list[2].list[0].list);
+			int val = stoi(x.list[1].val);
+
+			if (result.size() < val)
+				return nil;
+			return result[val];
+		}
 	}
-	// (proc exp*) ->  연산자
 	cell proc(eval(x.list[0], env));
 	cells exps;
 	for (cell::iter exp = x.list.begin() + 1; exp != x.list.end(); ++exp)
@@ -358,7 +447,6 @@ void repl(const string& prompt, environment* env)
 // return the Lisp expression represented by the given string
 cell read(const string& s)
 {
-	//list template는 양방향 연결리스트를 사용한다.
 	list<string> tokens(tokenize(s));
 	return read_from(tokens);
 }
@@ -383,7 +471,7 @@ list<string> tokenize(const string& str) {
 			while (*t && *t != ' ' && *t != '(' && *t != ')') {
 				++t;
 			}
-			tokens.push_back(string(s, t));
+			tokens.push_back(lowercase(string(s, t)));
 			s = t;
 		}
 	}
@@ -395,7 +483,6 @@ cell read_from(list<string>& tokens) {
 	const string token(tokens.front());
 	tokens.pop_front();
 
-	// (로 시작하면 List로 판단
 	if (token == "(") {
 		cell c(List);
 		while (tokens.front() != ")")
@@ -438,15 +525,21 @@ string to_string(const cell& exp)
 // define the bare minimum set of primintives necessary to pass the unit tests
 void add_globals(environment& env)
 {
-	//env배열은 map<string, cell>로 이루어져 있다.
 	env["nil"] = nil;   env["#f"] = false_sym;  env["#t"] = true_sym;
 	env["append"] = cell(&proc_append);   env["car"] = cell(&proc_car);
 	env["cdr"] = cell(&proc_cdr);      env["cons"] = cell(&proc_cons);
 	env["length"] = cell(&proc_length);   env["list"] = cell(&proc_list);
-	env["null?"] = cell(&proc_nullp);    env["+"] = cell(&proc_add);
+	env["member"] = cell(&proc_member);   env["assoc"] = cell(&proc_assoc);
+	env["remove"] = cell(&proc_remove);   env["subst"] = cell(&proc_subst);
+	env["null"] = cell(&proc_null);    env["+"] = cell(&proc_add);
 	env["-"] = cell(&proc_sub);      env["*"] = cell(&proc_mul);
 	env["/"] = cell(&proc_div);      env[">"] = cell(&proc_greater);
 	env["<"] = cell(&proc_less);     env["<="] = cell(&proc_less_equal);
+	env[">="] = cell(&proc_greater_equal); env["caddr"] = cell(&proc_caddr);
+	env["reverse"] = cell(&proc_reverse); env["ERROR"] = error;
+	env["atom"] = cell(&proc_atom); env["numberp"] = cell(&proc_numberp);
+	env["zerop"] = cell(&proc_zerop); env["minusp"] = cell(&proc_minusp);
+	env["equal"] = cell(&proc_equal); env["stringp"] = cell(&proc_stringp);
 }
 
 int main()
@@ -455,99 +548,3 @@ int main()
 	add_globals(global_env);
 	repl("90> ", &global_env);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
-Testing
-
-Here are the 29 tests for Lis.py.The main() function in the code above is replaced by all this code to run the tests.
-*/
-////////////////////// unit tests
-
-unsigned g_test_count;      // count of number of unit tests executed
-unsigned g_fault_count;     // count of number of unit tests that fail
-
-template <typename T1, typename T2>
-void test_equal_(const T1& value, const T2& expected_value, const char* file, int line)
-{
-	++g_test_count;
-	if (value != expected_value) {
-		std::cout
-			<< file << '(' << line << ") : "
-			<< " expected " << expected_value
-			<< ", got " << value
-			<< '\n';
-		++g_fault_count;
-	}
-}
-
-// write a message to std::cout if value != expected_value
-#define TEST_EQUAL(value, expected_value) test_equal_(value, expected_value, __FILE__, __LINE__)
-
-// evaluate the given Lisp expression and compare the result against the given expected_result
-#define TEST(expr, expected_result) TEST_EQUAL(to_string(eval(read(expr), &global_env)), expected_result)
-
-/*
-int main()
-{
-	environment global_env; add_globals(global_env);
-
-	// the 29 unit tests for lis.py
-	TEST("(quote (testing 1 (2.0) -3.14e159))", "(testing 1 (2.0) -3.14e159)");
-	TEST("(+ 2 2)", "4");
-	TEST("(+ (* 2 100) (* 1 10))", "210");
-	TEST("(if (> 6 5) (+ 1 1) (+ 2 2))", "2");
-	TEST("(if (< 6 5) (+ 1 1) (+ 2 2))", "4");
-	TEST("(define x 3)", "3");
-	TEST("x", "3");
-	TEST("(+ x x)", "6");
-	TEST("(begin (define x 1) (set! x (+ x 1)) (+ x 1))", "3");
-	TEST("((lambda (x) (+ x x)) 5)", "10");
-	TEST("(define twice (lambda (x) (* 2 x)))", "<Lambda>");
-	TEST("(twice 5)", "10");
-	TEST("(define compose (lambda (f g) (lambda (x) (f (g x)))))", "<Lambda>");
-	TEST("((compose list twice) 5)", "(10)");
-	TEST("(define repeat (lambda (f) (compose f f)))", "<Lambda>");
-	TEST("((repeat twice) 5)", "20");
-	TEST("((repeat (repeat twice)) 5)", "80");
-	TEST("(define fact (lambda (n) (if (<= n 1) 1 (* n (fact (- n 1))))))", "<Lambda>");
-	TEST("(fact 3)", "6");
-	//TEST("(fact 50)", "30414093201713378043612608166064768844377641568960512000000000000");
-	TEST("(fact 12)", "479001600"); // no bignums; this is as far as we go with 32 bits
-	TEST("(define abs (lambda (n) ((if (> n 0) + -) 0 n)))", "<Lambda>");
-	TEST("(list (abs -3) (abs 0) (abs 3))", "(3 0 3)");
-	TEST("(define combine (lambda (f)"
-		"(lambda (x y)"
-		"(if (null? x) (quote ())"
-		"(f (list (car x) (car y))"
-		"((combine f) (cdr x) (cdr y)))))))", "<Lambda>");
-	TEST("(define zip (combine cons))", "<Lambda>");
-	TEST("(zip (list 1 2 3 4) (list 5 6 7 8))", "((1 5) (2 6) (3 7) (4 8))");
-	TEST("(define riff-shuffle (lambda (deck) (begin"
-		"(define take (lambda (n seq) (if (<= n 0) (quote ()) (cons (car seq) (take (- n 1) (cdr seq))))))"
-		"(define drop (lambda (n seq) (if (<= n 0) seq (drop (- n 1) (cdr seq)))))"
-		"(define mid (lambda (seq) (/ (length seq) 2)))"
-		"((combine append) (take (mid deck) deck) (drop (mid deck) deck)))))", "<Lambda>");
-	TEST("(riff-shuffle (list 1 2 3 4 5 6 7 8))", "(1 5 2 6 3 7 4 8)");
-	TEST("((repeat riff-shuffle) (list 1 2 3 4 5 6 7 8))", "(1 3 5 7 2 4 6 8)");
-	TEST("(riff-shuffle (riff-shuffle (riff-shuffle (list 1 2 3 4 5 6 7 8))))", "(1 2 3 4 5 6 7 8)");
-
-	std::cout
-		<< "total tests " << g_test_count
-		<< ", total failures " << g_fault_count
-		<< "\n";
-	return g_fault_count ? EXIT_FAILURE : EXIT_SUCCESS;
-}*/
