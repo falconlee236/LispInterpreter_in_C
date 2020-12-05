@@ -124,12 +124,12 @@ cell proc_add(const cells& c) {
 cell proc_sub(const cells& c) {//flag로 정수인지 소수인지 판단
 	bool flag = check_float(c.begin(), c.end());
 
-	if (flag) {
+	if (flag) {//소수이면 소수로 계산을 함
 		float n(stof(c[0].val));
 		for (cellit i = c.begin() + 1; i != c.end(); ++i) n -= stof(i->val);
 		return cell(Number, to_string(n));
 	}
-	else {
+	else {//정수면 정수로 계산을 함
 		long n(atol(c[0].val.c_str()));
 		for (cellit i = c.begin() + 1; i != c.end(); ++i) n -= atol(i->val.c_str());
 		return cell(Number, str(n));
@@ -138,12 +138,12 @@ cell proc_sub(const cells& c) {//flag로 정수인지 소수인지 판단
 cell proc_mul(const cells& c) {
 	bool flag = check_float(c.begin(), c.end());
 
-	if (flag) {
+	if (flag) {//소수이면 소수로 계산을 함
 		float n(stof(c[0].val));
 		for (cellit i = c.begin() + 1; i != c.end(); ++i) n *= stof(i->val);
 		return cell(Number, to_string(n));
 	}
-	else {
+	else {//정수면 정수로 계산을 함
 		long n(1);
 		for (cellit i = c.begin(); i != c.end(); ++i) n *= atol(i->val.c_str());
 		return cell(Number, str(n));
@@ -157,14 +157,14 @@ cell proc_div(const cells& c) {
 cell proc_greater(const cells& c) {
 	bool flag = check_float(c.begin(), c.end());
 
-	if (flag) {
+	if (flag) {//소수이면 소수로 계산을 함
 		float n(stof(c[0].val));
 		for (cellit i = c.begin() + 1; i != c.end(); ++i)
 			if (n <= stof(i->val))
 				return false_sym;
 		return true_sym;
 	}
-	else {
+	else {//정수면 정수로 계산을 함
 		long n(atol(c[0].val.c_str()));
 		for (cellit i = c.begin() + 1; i != c.end(); ++i)
 			if (n <= atol(i->val.c_str()))
@@ -232,13 +232,13 @@ cell proc_numberp(const cells& c) { return c[0].type == Number ? true_sym : fals
 cell proc_atom(const cells& c) { return c[0].type == Symbol ? true_sym : false_sym; }
 cell proc_length(const cells& c) { return cell(Number, str(c[0].list.size())); }
 cell proc_null(const cells& c) { return c[0].list.empty() ? true_sym : false_sym; }
-cell proc_car(const cells& c) { return c[0].list[0]; }
+cell proc_car(const cells& c) { return c[0].list[0]; }//car함수는 첫번째 것을 리턴해주므로 이렇게 정의
 cell proc_cdr(const cells& c)
 {
 	if (c[0].list.size() < 2)
 		return nil;
 	cell result(c[0]);
-	result.list.erase(result.list.begin());
+	result.list.erase(result.list.begin());//첫번째 것을 제외하고 리턴해야하므로 지워줌
 	return result;
 }
 cell proc_caddr(const cells& c) {
@@ -249,7 +249,7 @@ cell proc_caddr(const cells& c) {
 	result.list.erase(result.list.begin());
 	return result.list[0];
 }
-cell proc_append(const cells& c) {
+cell proc_append(const cells& c) {//여러개의 리스트를 하나로 만들어주는 함수
 	cell result(List);
 	result.list = c[0].list;
 	for (int k = 1; k < c.size(); k++) {
@@ -346,6 +346,7 @@ cell proc_print(const cells& c) {
 
 
 ////////////////////// eval함수
+//parser
 cell eval(cell x, environment* env) {
 	if (x.type == Symbol) {
 		string lower_str = lowercase(x.val);
@@ -437,12 +438,12 @@ bool isdig(char c) {
 	return isdigit(static_cast<unsigned char>(c)) != 0;
 }
 
-
+//입력인자가 2.34, 1.03 등 소수일때 true를 return해준다.
 bool isfloat(string c) {
 	return c.find('.') == string::npos ? false : true;
 }
 
-
+//isfloat를 이용하여, cell에 있는 숫자들이 모두 float인지 검사해주는 함수.
 bool check_float(const cellit& start, const cellit& end) {
 	for (cellit i = start; i != end; i++) {
 		if (isfloat(i->val)) {
@@ -451,7 +452,7 @@ bool check_float(const cellit& start, const cellit& end) {
 	}
 	return false;
 }
-
+//모두 소문자로 바꾸어주는 함수
 string lowercase(string up_string) {
 	transform(up_string.begin(), up_string.end(), up_string.begin(), tolower);
 	return up_string;
@@ -479,6 +480,7 @@ cell read(const string& s)
 
 
 //입력 받은 str을 토큰화 하여 토큰 list로 반환해주는 함수.
+//lexer
 list<string> tokenize(const string& str) {
 	list<string> tokens;
 	const char* s = str.c_str();

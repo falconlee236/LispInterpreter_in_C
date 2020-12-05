@@ -421,7 +421,7 @@ bool isdig(char c) {
 	return isdigit(static_cast<unsigned char>(c)) != 0;
 }
 
-//입력인자가 2.34, 1.03 등 소수일때 true를 return해준다.이는 '.'이 존재하는지로 따지나.
+//입력인자가 2.34, 1.03 등 소수일때 true를 return해준다.
 bool isfloat(string c) {
 	return c.find('.') == string::npos ? false : true;
 }
