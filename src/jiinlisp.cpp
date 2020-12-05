@@ -40,9 +40,9 @@ struct cell {
 typedef vector<cell> cells;
 typedef cells::const_iterator cellit;
 
-const cell false_sym(Symbol, "false");
-const cell true_sym(Symbol, "true"); //false_sym이 아닌 것들은 모두 true_sym이다.
-const cell nil(Symbol, "nil");
+const cell false_sym(Symbol, "FALSE");
+const cell true_sym(Symbol, "TRUE"); //false_sym이 아닌 것들은 모두 true_sym이다.
+const cell nil(Symbol, "NIL");
 const cell error(Symbol, "ERROR");
 
 /////////////////////////////////////////////////////////////////////////////////////////////
@@ -93,7 +93,7 @@ string str(long n);
 bool isdig(char c);
 bool isfloat(string c);
 bool check_float(const cellit& start, const cellit& end);
-string lowercase(string up_string);
+string uppercase(string up_string);
 
 
 ////////////////////// 구문을 파싱하고, 읽고 사용하는데에 필요.
@@ -342,7 +342,7 @@ cell proc_print(const cells& c) {
 //parser에 해당함
 cell eval(cell x, environment* env) {
 	if (x.type == Symbol) {
-		string lower_str = lowercase(x.val);
+		string lower_str = uppercase(x.val);
 		return env->find(lower_str)[lower_str];
 		//find함수를 통해서 lower_str로 변환한 해당 symbol이 정의되어있는
 		//(또는 lambda를 통해 정의한적있는) 함수인지를 찾는다.
@@ -360,19 +360,19 @@ cell eval(cell x, environment* env) {
 			x.list[0].val.pop_back();
 			return x.list[0];
 		}
-		if (lowercase(x.list[0].val) == "if")         //cell로 맵핑하지 않은 함수중 if를 인식하는 역할을 한다.
-			return eval(eval(x.list[1], env).val == "false" ? (x.list.size() < 4 ? nil : x.list[3]) : x.list[2], env);
-		if (lowercase(x.list[0].val) == "cond") {
+		if (uppercase(x.list[0].val) == "IF")         //cell로 맵핑하지 않은 함수중 if를 인식하는 역할을 한다.
+			return eval(eval(x.list[1], env).val == "FALSE" ? (x.list.size() < 4 ? nil : x.list[3]) : x.list[2], env);
+		if (uppercase(x.list[0].val) == "COND") {
 			int i;
 			for (i = 1; i < x.list.size(); i++) {
 				if (x.list[i].list.size() == 1) return eval(x.list[i].list[0], env);
-				if (eval(x.list[i].list[0], env).val == "true") return eval(x.list[i].list[1], env);
+				if (eval(x.list[i].list[0], env).val == "TRUE") return eval(x.list[i].list[1], env);
 			}
 		}
 
-		if (lowercase(x.list[0].val) == "setq")      //cell로 맵핑하지 않은 함수중 setq를 인식하는 역할을 함.
+		if (uppercase(x.list[0].val) == "SETQ")      //cell로 맵핑하지 않은 함수중 setq를 인식하는 역할을 함.
 			return (*env)[x.list[1].val] = eval(x.list[2], env);
-		if (lowercase(x.list[0].val) == "nth") {
+		if (uppercase(x.list[0].val) == "NTH") {
 			if (x.list[2].type != List || x.list[2].list[0].type == Symbol)
 				return error;
 
@@ -387,7 +387,7 @@ cell eval(cell x, environment* env) {
 		//cell로 모든 함수를 맵핑하려 했으나, if cond setq등 맵핑하는데 어려울 것 같은 함수들은 eval
 		//함수 내에 해당 역할을 수행하는 if문을 작성하였음.
 		//
-		if (x.list[0].val == "lambda") {    // (lambda (var*) exp)
+		if (x.list[0].val == "LAMBDA") {    // (lambda (var*) exp)
 			x.type = Lambda;
 			x.env = env;
 			return x;
@@ -445,8 +445,8 @@ bool check_float(const cellit& start, const cellit& end) {
 }
 
 //모두 소문자로 바꾸어주는 함수
-string lowercase(string up_string) {
-	transform(up_string.begin(), up_string.end(), up_string.begin(), tolower);
+string uppercase(string up_string) {
+	transform(up_string.begin(), up_string.end(), up_string.begin(), toupper);
 	return up_string;
 }
 
@@ -494,7 +494,7 @@ list<string> tokenize(const string& str) {
 			while (*t && *t != '(' && *t != ')') {
 				++t;
 			}
-			tokens.push_back(lowercase(string(s, t)));
+			tokens.push_back(uppercase(string(s, t)));
 			s = t;
 		}
 		else if (*s == '#') {
@@ -506,7 +506,7 @@ list<string> tokenize(const string& str) {
 			while (*t && *t != ' ' && *t != '(' && *t != ')') {
 				++t;
 			}//setq, car등 한글자가아닌 여러글자로 되어있는 단어들을 token으로 한번에 push해주기 위함.
-			tokens.push_back(lowercase(string(s, t)));
+			tokens.push_back(uppercase(string(s, t)));
 			s = t;
 		}
 	}
@@ -542,7 +542,7 @@ cell read_from(list<string>& tokens) {
 		return c;
 	}
 	//caddr들을 car(cdr(cdr 중첩으로 바꾸어주어, 해당 함수의 역할을 하게한다.
-	else if ((token.substr(0, 2) == "ca" || token.substr(0, 2) == "cd") && (token.size() > 2 && token[2] != 'r')) {
+	else if ((token.substr(0, 2) == "CA" || token.substr(0, 2) == "CD") && (token.size() > 2 && token[2] != 'R')) {
 		cell c(List);
 		string temp = token.substr(0, 2);
 		temp.insert(temp.end(), 'r');
@@ -600,22 +600,21 @@ string to_string(const cell& exp)
 //proc_append함수의 포인터를 cell화 시켜서 대입해준다.
 void add_globals(environment& env)
 {
-	env["nil"] = nil;   env["#f"] = false_sym;  env["#t"] = true_sym;
-	env["append"] = cell(&proc_append);   env["car"] = cell(&proc_car);
-	env["cdr"] = cell(&proc_cdr);      env["cons"] = cell(&proc_cons);
-	env["length"] = cell(&proc_length);   env["list"] = cell(&proc_list);
-	env["member"] = cell(&proc_member);   env["assoc"] = cell(&proc_assoc);
-	env["remove"] = cell(&proc_remove);   env["subst"] = cell(&proc_subst);
-	env["null"] = cell(&proc_null);    env["+"] = cell(&proc_add);
+	env["NIL"] = nil;   env["#F"] = false_sym;  env["#T"] = true_sym;
+	env["APPEND"] = cell(&proc_append);   env["CAR"] = cell(&proc_car);
+	env["CDR"] = cell(&proc_cdr);      env["CONS"] = cell(&proc_cons);
+	env["LENGTH"] = cell(&proc_length);   env["LIST"] = cell(&proc_list);
+	env["MEMBER"] = cell(&proc_member);   env["ASSOC"] = cell(&proc_assoc);
+	env["REMOVE"] = cell(&proc_remove);   env["SUBST"] = cell(&proc_subst);
+	env["NULL"] = cell(&proc_null);    env["+"] = cell(&proc_add);
 	env["-"] = cell(&proc_sub);      env["*"] = cell(&proc_mul);
 	env["/"] = cell(&proc_div);      env[">"] = cell(&proc_greater);
 	env["<"] = cell(&proc_less);     env["<="] = cell(&proc_less_equal);
-	env[">="] = cell(&proc_greater_equal); env["="] = cell(&proc_equal);
-	env["reverse"] = cell(&proc_reverse); env["ERROR"] = error;
-	env["atom"] = cell(&proc_atom); env["numberp"] = cell(&proc_numberp);
-	env["zerop"] = cell(&proc_zerop); env["minusp"] = cell(&proc_minusp);
-	env["equal"] = cell(&proc_equal); env["stringp"] = cell(&proc_stringp);
-	env["print"] = cell(&proc_print);
+	env[">="] = cell(&proc_greater_equal);
+	env["REVERSE"] = cell(&proc_reverse); env["ERROR"] = error;
+	env["ATOM"] = cell(&proc_atom); env["NUMBERP"] = cell(&proc_numberp);
+	env["ZEROP"] = cell(&proc_zerop); env["MINUSP"] = cell(&proc_minusp);
+	env["EQUAL"] = cell(&proc_equal); env["STRINGP"] = cell(&proc_stringp);
 }
 
 int main()
