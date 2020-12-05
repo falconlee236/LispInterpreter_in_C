@@ -8,15 +8,20 @@
 
 using namespace std;
 
-////////////////////// cell
+//////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////// cell ////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////
 
 enum cell_type { Symbol, Number, List, Proc, String };
+//cell내부에 포함된 celltype을 enum으로 정의. magic number를 쓰기보다 뜻을 알기 쉽게
+//enum으로 정의해준다.
 
-struct environment; // forward declaration; cell and environment reference each other
+struct environment; // cell에서 environment를 참조하고, environment도 cell을 참조하므로
+//구조체 전방선언을 해준다.
 
-// a variant that can hold any kind of lisp value
+//다양한 리스프 값들을 받을 수 있는 구조체.
 struct cell {
-	typedef cell(*proc_type)(const vector<cell>&);
+	typedef cell(*proc_type)(const vector<cell>&);//프로시저 타입별로, 해당하는 벡터를 인자로 하는 함수를 받는 함수 포인터
 	typedef vector<cell>::const_iterator iter;
 	typedef map<string, cell> map;
 
@@ -35,17 +40,18 @@ typedef vector<cell> cells;
 typedef cells::const_iterator cellit;
 
 const cell false_sym(Symbol, "false");
-const cell true_sym(Symbol, "true"); // anything that isn't false_sym is true
+const cell true_sym(Symbol, "true"); //false_sym이 아닌 것들은 모두 true_sym이다.
 const cell nil(Symbol, "nil");
 const cell error(Symbol, "ERROR");
 
+/////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////// environment ////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////
 
-////////////////////// environment
 
-// a dictionary that (a) associates symbols with cells, and
-// (b) can chain to an "outer" dictionary
+//각 기호들을 해당 셀과 연결하고, outer dictionary 외부에 연결할 수 있게 해주는 dictionary이다
 struct environment {
-	// map a variable name onto a cell
+	// 변수 이름들을 셀로 매핑해준다.
 	typedef map<string, cell> map;
 
 	environment(environment* outer = 0) : outer_(outer) {}
@@ -58,30 +64,29 @@ struct environment {
 			env_[p->val] = *a++;
 	}
 
-	// return a reference to the innermost environment where 'var' appears
+
+	//string var이 나타나는 가장 안쪽(재귀로 함수를 부를 수 있으므로)에 레퍼런스를 반환한다.
 	map& find(const string& var)
 	{
 		if (env_.find(var) != env_.end())
-			return env_; // the symbol exists in this environment
+			return env_; // symbol들이 위에서 매핑한 env에 들어있으므로, 이것을 리턴해줌.
 		if (outer_)
-			return outer_->find(var); // attempt to find the symbol in some "outer" env
+			return outer_->find(var); // "outer"에서도 symbol을 찾아줌
 		cout << "unbound symbol '" << var << endl;
 		exit(1);
 	}
 
-	// return a reference to the cell associated with the given symbol 'var'
+	//입력인자 var에, 해당 env_의 셀의 주소자를 반환한다.
 	cell& operator[] (const string& var)
 	{
 		return env_[var];
 	}
 
 private:
-	map env_; // inner symbol->cell mapping
-	environment* outer_; // next adjacent outer env, or 0 if there are no further environments
+	map env_; // 셀로 맵핑해두었음.
+	environment* outer_; // 만약 0이라면, 다음에 읽어올 외부환경(재귀로 읽었을 때 외부)이 없다는 이야기이다.
 };
 
-//(+ 3/4 3) 15/4
-////////////////////// user-define fucntions
 string str(long n);
 bool isdig(char c);
 bool isfloat(string c);
@@ -89,15 +94,15 @@ bool check_float(const cellit& start, const cellit& end);
 string lowercase(string up_string);
 
 
-////////////////////// parse, read and user interaction
+////////////////////// 구문을 파싱하고, 읽고 사용하는데에 필요.
 list<string> tokenize(const string& str); cell atom(const string& token); cell read_from(list<string>& tokens);
 cell read(const string& s); string to_string(const cell& exp); void repl(const string& prompt, environment* env);
 void add_globals(environment& env); cell eval(cell x, environment* env);
 
-/*
-function define
-*/
-////////////////////// built-in primitive procedures
+///////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////// functions ////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////
+
 
 cell proc_add(const cells& c) {
 	bool flag = check_float(c.begin(), c.end());
@@ -370,7 +375,7 @@ cell eval(cell x, environment* env) {
 			x.list[0].val.pop_back();
 			return x.list[0];
 		}
-		if (lowercase(x.list[0].val) == "if")         // (if test conseq [alt])
+		if (lowercase(x.list[0].val) == "if")         //cell로 맵핑하지 않은 함수중 if를 인식하는 역할을 한다.
 			return eval(eval(x.list[1], env).val == "false" ? (x.list.size() < 4 ? nil : x.list[3]) : x.list[2], env);
 		if (lowercase(x.list[0].val) == "cond") {
 			int i;
@@ -381,7 +386,7 @@ cell eval(cell x, environment* env) {
 			}
 		}
 
-		if (lowercase(x.list[0].val) == "setq")      // (setq var exp)
+		if (lowercase(x.list[0].val) == "setq")      //cell로 맵핑하지 않은 함수중 setq를 인식하는 역할을 함.
 			return (*env)[x.list[1].val] = eval(x.list[2], env);
 		if (lowercase(x.list[0].val) == "nth") {
 			if (x.list[2].type != List || x.list[2].list[0].type == Symbol)
@@ -394,6 +399,10 @@ cell eval(cell x, environment* env) {
 				return nil;
 			return result[val];
 		}
+		//
+		//cell로 모든 함수를 맵핑하려 했으나, if cond setq등 맵핑하는데 어려울 것 같은 함수들은 eval
+		//함수 내에 해당 역할을 수행하는 if문을 작성하였음.
+		//
 	}
 	cell proc(eval(x.list[0], env));
 	cells exps;
@@ -408,24 +417,26 @@ cell eval(cell x, environment* env) {
 
 }
 
-// return given mumber as a string
+//숫자를 string으로 바꿔서 반환해주는 함수
 string str(long n) {
 	ostringstream os;
 	os << n;
 	return os.str();
 }
+//ostringstream이란 문자열 format을 조합하여 저장해 줄때 사용하는 class이다.
 
-// return true iff given character is '0'..'9'
+
+//입력 인자가 0,1,2,,,,9등 숫자일 때 true를 return 해준다
 bool isdig(char c) {
 	return isdigit(static_cast<unsigned char>(c)) != 0;
 }
 
-//made by LSY
+
 bool isfloat(string c) {
 	return c.find('.') == string::npos ? false : true;
 }
 
-//made by LSY
+
 bool check_float(const cellit& start, const cellit& end) {
 	for (cellit i = start; i != end; i++) {
 		if (isfloat(i->val)) {
@@ -440,9 +451,9 @@ string lowercase(string up_string) {
 	return up_string;
 }
 
-////////////////////// parse, read and user interaction
 
-// the default read-eval-print-loop
+//while true 문을 통해서,
+//계속 입력을 받아주도록 되어있는 repl 함수
 void repl(const string& prompt, environment* env)
 {
 	while (true) {
@@ -452,14 +463,16 @@ void repl(const string& prompt, environment* env)
 	}
 }
 
-// return the Lisp expression represented by the given string
+
+//입력받은 식을 lisp식으로 반환해주는 함수
 cell read(const string& s)
 {
 	list<string> tokens(tokenize(s));
 	return read_from(tokens);
 }
 
-// convert given string to list of tokens
+
+//입력 받은 str을 토큰화 하여 토큰 list로 반환해주는 함수.
 list<string> tokenize(const string& str) {
 	list<string> tokens;
 	const char* s = str.c_str();
@@ -500,7 +513,8 @@ list<string> tokenize(const string& str) {
 	return tokens;
 }
 
-// return the Lisp expression in the given tokens
+
+//토큰 list에서 lisp 식을 반환해주는 함수.
 cell read_from(list<string>& tokens) {
 	const string token(tokens.front());
 	tokens.pop_front();
@@ -531,7 +545,10 @@ cell read_from(list<string>& tokens) {
 		return atom(token);
 }
 
-// numbers become Numbers; every other token is a Symbol
+
+
+//위에서 정의해준 enum대로, 숫자면 enum의 Numbers, string이면 String
+//다른 토큰들은 Symbol이라는 속성을 부여한 cell로 바꾸어준다.
 cell atom(const string& token) {
 	if (isdig(token[0]) || (token[0] == '-' && isdig(token[1])))
 		return cell(Number, token);
@@ -540,7 +557,8 @@ cell atom(const string& token) {
 	return cell(Symbol, token);
 }
 
-// convert given cell to a Lisp-readable string
+
+//cell속성으로 입력받은 인자들을, lisp string으로 반환한다.
 string to_string(const cell& exp)
 {
 	if (exp.type == List) {
@@ -556,7 +574,13 @@ string to_string(const cell& exp)
 	return exp.val;
 }
 
-// define the bare minimum set of primintives necessary to pass the unit tests
+
+//입력받은 environment env가, [] 괄호에 해당하는 내용일경우, 해당하는 함수 포인터를 cell()에
+//집어넣어 cell화 시킨후,env[]에 return한다.
+
+//예를 들어 설명하면, environment & env에 append라는 값이 들어오면,
+//env["append"]에 해당하므로, env["append"] = cell(&proc_append); 라는 줄에 의해
+//proc_append함수의 포인터를 cell화 시켜서 대입해준다.
 void add_globals(environment& env)
 {
 	env["nil"] = nil;   env["#f"] = false_sym;  env["#t"] = true_sym;
