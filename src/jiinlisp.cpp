@@ -109,16 +109,19 @@ void add_globals(environment& env); cell eval(cell x, environment* env);
 cell proc_add(const cells& c) {
 	bool flag = check_float(c.begin(), c.end());//flag로 정수인지 소수인지 판단해준다.
 
-	if (flag) {//소수이면 소수로 계산을 함
-		float n(stof(c[0].val));
-		for (cellit i = c.begin() + 1; i != c.end(); ++i) n += stof(i->val);
-		return cell(Number, to_string(n));
+	if (c.size() != 0) {
+		if (flag) {//소수이면 소수로 계산을 함
+			float n(stof(c[0].val));
+			for (cellit i = c.begin() + 1; i != c.end(); ++i) n += stof(i->val);
+			return cell(Number, to_string(n));
+		}
+		else {//정수면 정수로 계산을 함
+			long n(atol(c[0].val.c_str()));
+			for (cellit i = c.begin() + 1; i != c.end(); ++i) n += atol(i->val.c_str());
+			return cell(Number, str(n));
+		}
 	}
-	else {//정수면 정수로 계산을 함
-		long n(atol(c[0].val.c_str()));
-		for (cellit i = c.begin() + 1; i != c.end(); ++i) n += atol(i->val.c_str());
-		return cell(Number, str(n));
-	}
+	else return cell(Number, "0");
 
 }
 cell proc_sub(const cells& c) {//flag로 정수인지 소수인지 판단
@@ -138,20 +141,24 @@ cell proc_sub(const cells& c) {//flag로 정수인지 소수인지 판단
 cell proc_mul(const cells& c) {
 	bool flag = check_float(c.begin(), c.end());
 
-	if (flag) {//소수이면 소수로 계산을 함
-		float n(stof(c[0].val));
-		for (cellit i = c.begin() + 1; i != c.end(); ++i) n *= stof(i->val);
-		return cell(Number, to_string(n));
+	if (c.size() != 0) {
+		if (flag) {//소수이면 소수로 계산을 함
+			float n(stof(c[0].val));
+			for (cellit i = c.begin() + 1; i != c.end(); ++i) n *= stof(i->val);
+			return cell(Number, to_string(n));
+		}
+		else {//정수면 정수로 계산을 함
+			long n(1);
+			for (cellit i = c.begin(); i != c.end(); ++i) n *= atol(i->val.c_str());
+			return cell(Number, str(n));
+		}
 	}
-	else {//정수면 정수로 계산을 함
-		long n(1);
-		for (cellit i = c.begin(); i != c.end(); ++i) n *= atol(i->val.c_str());
-		return cell(Number, str(n));
-	}
+	else return cell(Number, "1");
 }
 cell proc_div(const cells& c) {
 	float n(stof(c[0].val));//전부 소수로 생각하고 계산(정수/정수 도 소수가 될 수 있으므로)
 	for (cellit i = c.begin() + 1; i != c.end(); ++i) n /= stof(i->val);
+	if ((c.begin() + 1) == c.end()) n = 1 / n;
 	return cell(Number, to_string(n));
 }
 cell proc_greater(const cells& c) {//큰지
