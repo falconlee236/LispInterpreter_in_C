@@ -485,11 +485,13 @@ cell read(const string& s)
 list<string> tokenize(const string& str) {
 	list<string> tokens;
 	const char* s = str.c_str();
+	static int front = 0;
 	while (*s) {
 		while (*s == ' ') {//lisp의 토큰들은 ' '공백을 기준으로 나뉘기 때문. ex: setq (공백) x (공백) 3
 			++s;
 		}
-
+		if (*s == '(') front++;
+		if (*s == ')') front--;
 		if (*s == '(' || *s == ')')
 			tokens.push_back(*s++ == '(' ? "(" : ")");
 		else if (*s == '\'') {
@@ -518,6 +520,10 @@ list<string> tokenize(const string& str) {
 			tokens.push_back(uppercase(string(s, t)));
 			s = t;
 		}
+	}
+	if (front != 0) {
+		string line; getline(cin, line);
+		tokens.splice(tokens.end(), tokenize(line));
 	}
 	return tokens;
 }
