@@ -56,17 +56,6 @@ struct environment {
 	// 변수 이름들을 셀로 매핑해준다.
 	typedef map<string, cell> map;
 
-	//environment(environment* outer = 0) : outer_(outer) {}
-
-	//environment(const cells& parms, const cells& args, environment* outer)
-		//: outer_(outer)
-	//{
-	//	cellit a = args.begin();
-	//	for (cellit p = parms.begin(); p != parms.end(); ++p)
-	//		env_[p->val] = *a++;
-	//}
-
-
 	//string var이 나타나는 레퍼런스를 반환한다.
 	map& find(const string& var)
 	{
@@ -86,7 +75,6 @@ struct environment {
 
 private:
 	map env_; // 셀로 맵핑해두었음.
-	environment* outer_; 
 };
 
 string str(long n);
@@ -134,7 +122,6 @@ cell proc_sub(const cells& c) {
 		for (cellit i = c.begin() + 1; i != c.end(); ++i) n -= atol(i->val.c_str());
 		return cell(Number, str(n));
 	}
-
 }
 cell proc_mul(const cells& c) {
 	bool flag = check_float(c.begin(), c.end());
@@ -149,28 +136,11 @@ cell proc_mul(const cells& c) {
 		for (cellit i = c.begin(); i != c.end(); ++i) n *= atol(i->val.c_str());
 		return cell(Number, str(n));
 	}
-
 }
 cell proc_div(const cells& c) {
-
-	/*
-		bool flag = check_float(c.begin(), c.end());
-
-	if (flag) {
-		float n(stof(c[0].val));
-		for (cellit i = c.begin() + 1; i != c.end(); ++i) n /= stof(i->val);
-		return cell(Number, to_string(n));
-	}
-	else {
-		long n(atol(c[0].val.c_str()));
-		for (cellit i = c.begin() + 1; i != c.end(); ++i) n /= atol(i->val.c_str());
-		return cell(Number, str(n));
-	}
-	*/
 	float n(stof(c[0].val));
 	for (cellit i = c.begin() + 1; i != c.end(); ++i) n /= stof(i->val);
 	return cell(Number, to_string(n));
-
 }
 cell proc_greater(const cells& c) {
 	bool flag = check_float(c.begin(), c.end());
@@ -189,7 +159,6 @@ cell proc_greater(const cells& c) {
 				return false_sym;
 		return true_sym;
 	}
-
 }
 cell proc_less(const cells& c) {
 	bool flag = check_float(c.begin(), c.end());
