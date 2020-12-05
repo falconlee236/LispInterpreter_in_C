@@ -13,7 +13,7 @@ using namespace std;
 //////////////////////////////////////// cell ////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////
 
-enum cell_type { Symbol, Number, List, Proc, String };
+enum cell_type { Symbol, Number, List, Proc, String, Lambda };
 //cell내부에 포함된 celltype을 enum으로 정의. magic number를 쓰기보다 뜻을 알기 쉽게
 //enum으로 정의해준다.
 
@@ -26,9 +26,9 @@ struct cell {
 	typedef vector<cell>::const_iterator iter;
 	typedef map<string, cell> map;
 
-	cell_type type;
-	string val;
-	vector<cell> list;
+	cell_type type;//해당하는 데이터의 종류를 저장함.ex)숫자는 Number,심볼이면 Symbol등
+	string val;//token의 data
+	vector<cell> list;//한 줄의 token들이 vector로 저장됨. ex:(setq x 5) 라면 setq,x,5
 	proc_type proc;
 	environment* env;
 
@@ -150,11 +150,11 @@ cell proc_mul(const cells& c) {
 	}
 }
 cell proc_div(const cells& c) {
-	float n(stof(c[0].val));
+	float n(stof(c[0].val));//전부 소수로 생각하고 계산(정수/정수 도 소수가 될 수 있으므로)
 	for (cellit i = c.begin() + 1; i != c.end(); ++i) n /= stof(i->val);
 	return cell(Number, to_string(n));
 }
-cell proc_greater(const cells& c) {
+cell proc_greater(const cells& c) {//큰지
 	bool flag = check_float(c.begin(), c.end());
 
 	if (flag) {//소수이면 소수로 계산을 함
@@ -172,7 +172,7 @@ cell proc_greater(const cells& c) {
 		return true_sym;
 	}
 }
-cell proc_less(const cells& c) {
+cell proc_less(const cells& c) {//작은지
 	bool flag = check_float(c.begin(), c.end());
 
 	if (flag) {//소수이면 소수로 계산을 함
@@ -191,7 +191,7 @@ cell proc_less(const cells& c) {
 	}
 
 }
-cell proc_less_equal(const cells& c) {
+cell proc_less_equal(const cells& c) {//작거나 같은지
 	bool flag = check_float(c.begin(), c.end());
 
 	if (flag) {//소수이면 소수로 계산을 함
@@ -210,7 +210,7 @@ cell proc_less_equal(const cells& c) {
 	}
 
 }
-cell proc_greater_equal(const cells& c) {
+cell proc_greater_equal(const cells& c) {//크거나 같은지
 	bool flag = check_float(c.begin(), c.end());
 
 	if (flag) {//소수이면 소수로 계산을 함
@@ -347,11 +347,13 @@ cell proc_print(const cells& c) {
 
 
 ////////////////////// eval함수
-//parser
+//parser에 해당함
 cell eval(cell x, environment* env) {
 	if (x.type == Symbol) {
 		string lower_str = lowercase(x.val);
 		return env->find(lower_str)[lower_str];
+		//find함수를 통해서 lower_str로 변환한 해당 symbol이 정의되어있는
+		//(또는 lambda를 통해 정의한적있는) 함수인지를 찾는다.
 	}
 	if (x.type == Number)
 		return x;
@@ -393,11 +395,25 @@ cell eval(cell x, environment* env) {
 		//cell로 모든 함수를 맵핑하려 했으나, if cond setq등 맵핑하는데 어려울 것 같은 함수들은 eval
 		//함수 내에 해당 역할을 수행하는 if문을 작성하였음.
 		//
+		if (x.list[0].val == "lambda") {    // (lambda (var*) exp)
+			x.type = Lambda;
+			x.env = env;
+			return x;
+			//람다함수. 직접 사용자가 프로그램에서 함수를 정의하여
+			//사용할 수 있다.
+		}
 	}
 	cell proc(eval(x.list[0], env));
 	cells exps;
 	for (cell::iter exp = x.list.begin() + 1; exp != x.list.end(); ++exp)
 		exps.push_back(eval(*exp, env));
+
+	//lambda로 함수를 정의할때, environment를 생성함. 내부변수중 
+	//environment포인터였던 outer에, 사용자가 정의한 함수가 있다고 값을 바꿔주고,
+	//내부에 사용자가 정의내린 함수를 넣어준다.
+	if (proc.type == Lambda) {
+		return eval(proc.list[2], new environment(proc.list[1].list, exps, proc.env));
+	}
 
 	if (proc.type == Proc)
 		return proc.proc(exps);
@@ -464,12 +480,12 @@ cell read(const string& s)
 
 
 //입력 받은 str을 토큰화 하여 토큰 list로 반환해주는 함수.
-//lexer
+//lexer에 해당한다.
 list<string> tokenize(const string& str) {
 	list<string> tokens;
 	const char* s = str.c_str();
 	while (*s) {
-		while (*s == ' ') {
+		while (*s == ' ') {//lisp의 토큰들은 ' '공백을 기준으로 나뉘기 때문. ex: setq (공백) x (공백) 3
 			++s;
 		}
 
@@ -492,12 +508,12 @@ list<string> tokenize(const string& str) {
 		else if (*s == '#') {
 			tokens.push_back("#");
 			s++;
-		}
+		}// ( ) " ' #등 특수 구분자들을 tokens에 push해주는것.
 		else {
 			const char* t = s;
 			while (*t && *t != ' ' && *t != '(' && *t != ')') {
 				++t;
-			}
+			}//setq, car등 한글자가아닌 여러글자로 되어있는 단어들을 token으로 한번에 push해주기 위함.
 			tokens.push_back(lowercase(string(s, t)));
 			s = t;
 		}
@@ -533,6 +549,21 @@ cell read_from(list<string>& tokens) {
 		c.list.push_back(read_from(tokens));
 		return c;
 	}
+	//caddr들을 car(cdr(cdr 중첩으로 바꾸어주어, 해당 함수의 역할을 하게한다.
+	else if ((token.substr(0, 2) == "ca" || token.substr(0, 2) == "cd") && (token.size() > 2 && token[2] != 'r')) {
+		cell c(List);
+		string temp = token.substr(0, 2);
+		temp.insert(temp.end(), 'r');
+		c.list.push_back(cell(Symbol, temp));
+		cell s = cell(Symbol, temp);
+		temp = token;
+		temp.erase(temp.begin() + 1);
+		tokens.push_front(temp);
+		tokens.push_front("(");
+		tokens.insert(find(tokens.begin(), tokens.end(), ")"), ")");
+		return s;
+	}
+
 	else
 		return atom(token);
 }
@@ -563,6 +594,8 @@ string to_string(const cell& exp)
 	}
 	else if (exp.type == Proc)
 		return "<Proc>";
+	else if (exp.type == Lambda)
+		return "<Lambda>";
 	return exp.val;
 }
 
@@ -586,7 +619,7 @@ void add_globals(environment& env)
 	env["/"] = cell(&proc_div);      env[">"] = cell(&proc_greater);
 	env["<"] = cell(&proc_less);     env["<="] = cell(&proc_less_equal);
 	env[">="] = cell(&proc_greater_equal); env["="] = cell(&proc_equal);
-	env["caddr"] = cell(&proc_caddr);
+	env["caddr"] = cell(&proc_caddr);//여기를 지우랍신다!!!!!!!!!!!!!!!!!!!!!!
 	env["reverse"] = cell(&proc_reverse); env["ERROR"] = error;
 	env["atom"] = cell(&proc_atom); env["numberp"] = cell(&proc_numberp);
 	env["zerop"] = cell(&proc_zerop); env["minusp"] = cell(&proc_minusp);
