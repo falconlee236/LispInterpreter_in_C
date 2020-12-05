@@ -86,7 +86,7 @@ string str(long n);
 bool isdig(char c);
 bool isfloat(string c);
 bool check_float(const cellit& start, const cellit& end);
-string lowercase(string up_string);
+string upercase(string up_string);
 
 ////////////////////// built-in primitive procedures
 cell proc_add(const cells& c); cell proc_sub(const cells& c); cell proc_mul(const cells& c);
@@ -361,8 +361,8 @@ cell proc_stringp(const cells& c) {
 ////////////////////// eval
 cell eval(cell x, environment* env) {
 	if (x.type == Symbol) {
-		string lower_str = lowercase(x.val);
-		return env->find(lower_str)[lower_str];
+		string uper_str = upercase(x.val);
+		return env->find(uper_str)[uper_str];
 	}
 	if (x.type == Number)
 		return x;
@@ -371,11 +371,11 @@ cell eval(cell x, environment* env) {
 	if (x.list[0].type == Symbol || x.val == "\'") {
 		if (x.val == "\'")
 			return x.list[0];
-		if (lowercase(x.list[0].val) == "if")         // (if test conseq [alt])
+		if (upercase(x.list[0].val) == "IF")         // (if test conseq [alt])
 			return eval(eval(x.list[1], env).val == "#f" ? (x.list.size() < 4 ? nil : x.list[3]) : x.list[2], env);
-		if (lowercase(x.list[0].val) == "setq")      // (setq var exp)
+		if (upercase(x.list[0].val) == "SETQ")      // (setq var exp)
 			return (*env)[x.list[1].val] = eval(x.list[2], env);
-		if (lowercase(x.list[0].val) == "nth") {
+		if (upercase(x.list[0].val) == "NTH") {
 			if (x.list[2].type != List || x.list[2].list[0].type == Symbol)
 				return error;
 
@@ -427,8 +427,8 @@ bool check_float(const cellit& start, const cellit& end) {
 	return false;
 }
 
-string lowercase(string up_string) {
-	transform(up_string.begin(), up_string.end(), up_string.begin(), tolower);
+string upercase(string up_string) {
+	transform(up_string.begin(), up_string.end(), up_string.begin(), toupper);
 	return up_string;
 }
 
@@ -471,7 +471,7 @@ list<string> tokenize(const string& str) {
 			while (*t && *t != ' ' && *t != '(' && *t != ')') {
 				++t;
 			}
-			tokens.push_back(lowercase(string(s, t)));
+			tokens.push_back(upercase(string(s, t)));
 			s = t;
 		}
 	}
@@ -496,7 +496,7 @@ cell read_from(list<string>& tokens) {
 		c.list.push_back(read_from(tokens));
 		return c;
 	}
-	else if ((token.substr(0, 2) == "ca" || token.substr(0, 2) == "cd") && (token.size()>2 && token[2]!= 'r' )) {
+	else if ((token.substr(0, 2) == "CA" || token.substr(0, 2) == "CD") && (token.size()>2 && token[2]!= 'R' )) {
 		cell c(List);
 		string temp = token.substr(0, 2);
 		temp.insert(temp.end(), 'r');
@@ -506,7 +506,7 @@ cell read_from(list<string>& tokens) {
 		temp.erase(temp.begin()+1);
 		tokens.push_front(temp);
 		tokens.push_front("(");
-		tokens.push_back(")");
+		tokens.insert(find(tokens.begin(), tokens.end(), ")"), ")");
 		return s;
 	}
 	else
@@ -539,21 +539,21 @@ string to_string(const cell& exp)
 // define the bare minimum set of primintives necessary to pass the unit tests
 void add_globals(environment& env)
 {
-	env["nil"] = nil;   env["#f"] = false_sym;  env["#t"] = true_sym;
-	env["append"] = cell(&proc_append);   env["car"] = cell(&proc_car);
-	env["cdr"] = cell(&proc_cdr);      env["cons"] = cell(&proc_cons);
-	env["length"] = cell(&proc_length);   env["list"] = cell(&proc_list);
-	env["member"] = cell(&proc_member);   env["assoc"] = cell(&proc_assoc);
-	env["remove"] = cell(&proc_remove);   env["subst"] = cell(&proc_subst);
-	env["null"] = cell(&proc_null);    env["+"] = cell(&proc_add);
+	env["NIL"] = nil;   env["#F"] = false_sym;  env["#T"] = true_sym;
+	env["APPEND"] = cell(&proc_append);   env["CAR"] = cell(&proc_car);
+	env["CDR"] = cell(&proc_cdr);      env["CONS"] = cell(&proc_cons);
+	env["LENGTH"] = cell(&proc_length);   env["LIST"] = cell(&proc_list);
+	env["MEMBER"] = cell(&proc_member);   env["ASSOC"] = cell(&proc_assoc);
+	env["REMOVE"] = cell(&proc_remove);   env["SUBST"] = cell(&proc_subst);
+	env["NULL"] = cell(&proc_null);    env["+"] = cell(&proc_add);
 	env["-"] = cell(&proc_sub);      env["*"] = cell(&proc_mul);
 	env["/"] = cell(&proc_div);      env[">"] = cell(&proc_greater);
 	env["<"] = cell(&proc_less);     env["<="] = cell(&proc_less_equal);
 	env[">="] = cell(&proc_greater_equal);
-	env["reverse"] = cell(&proc_reverse); env["ERROR"] = error;
-	env["atom"] = cell(&proc_atom); env["numberp"] = cell(&proc_numberp);
-	env["zerop"] = cell(&proc_zerop); env["minusp"] = cell(&proc_minusp);
-	env["equal"] = cell(&proc_equal); env["stringp"] = cell(&proc_stringp);
+	env["REVERSE"] = cell(&proc_reverse); env["ERROR"] = error;
+	env["ATOM"] = cell(&proc_atom); env["NUMBERP"] = cell(&proc_numberp);
+	env["ZEROP"] = cell(&proc_zerop); env["MINUSP"] = cell(&proc_minusp);
+	env["EQUAL"] = cell(&proc_equal); env["STRINGP"] = cell(&proc_stringp);
 }
 
 int main()
