@@ -6,17 +6,23 @@
 #include <list>
 #include <map>
 
+
 using namespace std;
 
-////////////////////// cell
+//////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////// cell ////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////
 
-enum cell_type { Symbol, Number, List, Proc };
+enum cell_type { Symbol, Number, List, Proc, String };
+//cell내부에 포함된 celltype을 enum으로 정의. magic number를 쓰기보다 뜻을 알기 쉽게
+//enum으로 정의해준다.
 
-struct environment; // forward declaration; cell and environment reference each other
+struct environment; // cell에서 environment를 참조하고, environment도 cell을 참조하므로
+//구조체 전방선언을 해준다.
 
-// a variant that can hold any kind of lisp value
+//다양한 리스프 값들을 받을 수 있는 구조체.
 struct cell {
-	typedef cell(*proc_type)(const vector<cell>&);
+	typedef cell(*proc_type)(const vector<cell>&);//프로시저 타입별로, 해당하는 벡터를 인자로 하는 함수를 받는 함수 포인터
 	typedef vector<cell>::const_iterator iter;
 	typedef map<string, cell> map;
 
@@ -35,17 +41,19 @@ typedef vector<cell> cells;
 typedef cells::const_iterator cellit;
 
 const cell false_sym(Symbol, "false");
-const cell true_sym(Symbol, "true"); // anything that isn't false_sym is true
+const cell true_sym(Symbol, "true"); //false_sym이 아닌 것들은 모두 true_sym이다.
 const cell nil(Symbol, "nil");
 const cell error(Symbol, "ERROR");
 
+/////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////// environment ////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////
 
-////////////////////// environment
 
-// a dictionary that (a) associates symbols with cells, and
-// (b) can chain to an "outer" dictionary
+//각 기호들을 해당 셀과 연결하고
+//만약 추가로 함수를 정의한다면 outer를 이용하여 만들어는 dictionary이다
 struct environment {
-	// map a variable name onto a cell
+	// 변수 이름들을 셀로 매핑해준다.
 	typedef map<string, cell> map;
 
 	environment(environment* outer = 0) : outer_(outer) {}
@@ -57,147 +65,124 @@ struct environment {
 		for (cellit p = parms.begin(); p != parms.end(); ++p)
 			env_[p->val] = *a++;
 	}
-
-	// return a reference to the innermost environment where 'var' appears
+	//string var이 나타나는 레퍼런스를 반환한다.
 	map& find(const string& var)
 	{
 		if (env_.find(var) != env_.end())
-			return env_; // the symbol exists in this environment
-		if (outer_)
-			return outer_->find(var); // attempt to find the symbol in some "outer" env
-		cout << "unbound symbol '" << var << endl;
+			return env_; // symbol들이 위에서 매핑한 env에 들어있으므로, 이것을 리턴해줌.
+		if (outer_)//사용자 정의함수가 생기는 순간, outer_가 0에서 1,2,3등의 값으로 바뀌므로
+			//env_함수에서 해당 함수를 find하지 못했을 때 outer에서 찾기를 수행한다.
+			return outer_->find(var); // "outer"에서도 symbol을 찾아줌
+		cout << "unbound symbol '" << var << endl;//아무것도 찾지 못했을 때 출력.
 		exit(1);
 	}
 
-	// return a reference to the cell associated with the given symbol 'var'
+	//입력인자 var에, 해당 env_의 셀의 주소자를 반환한다.
 	cell& operator[] (const string& var)
 	{
 		return env_[var];
 	}
 
 private:
-	map env_; // inner symbol->cell mapping
-	environment* outer_; // next adjacent outer env, or 0 if there are no further environments
+	map env_; // 셀로 맵핑해두었음.
+	environment* outer_; //아우터 포인터는, 새로운 함수를 정의할 때 쓰인다.
 };
 
-//(+ 3/4 3) 15/4
-////////////////////// user-define fucntions
+//밑에서 정의 해둔 함수들의 전방선언.
 string str(long n);
 bool isdig(char c);
 bool isfloat(string c);
 bool check_float(const cellit& start, const cellit& end);
 string lowercase(string up_string);
 
-////////////////////// built-in primitive procedures
-cell proc_add(const cells& c); cell proc_sub(const cells& c); cell proc_mul(const cells& c);
-cell proc_div(const cells& c); cell proc_greater(const cells& c); cell proc_less(const cells& c);
-cell proc_less_equal(const cells& c); cell proc_length(const cells& c); cell proc_nullp(const cells& c);
-cell proc_car(const cells& c); cell proc_cdr(const cells& c); cell proc_append(const cells& c);
-cell proc_cons(const cells& c); cell proc_list(const cells& c);
 
-/*insert user_define func*/
-cell proc_caddr(const cells& c);
-
-////////////////////// parse, read and user interaction
+////////////////////// 구문을 파싱하고, 읽고 사용하는데에 필요.
 list<string> tokenize(const string& str); cell atom(const string& token); cell read_from(list<string>& tokens);
 cell read(const string& s); string to_string(const cell& exp); void repl(const string& prompt, environment* env);
 void add_globals(environment& env); cell eval(cell x, environment* env);
 
-/*
-function define
-*/
-////////////////////// built-in primitive procedures
+///////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////// functions ////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////
 
+//내장함수들
 cell proc_add(const cells& c) {
-	bool flag = check_float(c.begin(), c.end());
+	bool flag = check_float(c.begin(), c.end());//flag로 정수인지 소수인지 판단해준다.
 
-	if (flag) {
+	if (flag) {//소수이면 소수로 계산을 함
 		float n(stof(c[0].val));
 		for (cellit i = c.begin() + 1; i != c.end(); ++i) n += stof(i->val);
 		return cell(Number, to_string(n));
 	}
-	else {
+	else {//정수면 정수로 계산을 함
 		long n(atol(c[0].val.c_str()));
 		for (cellit i = c.begin() + 1; i != c.end(); ++i) n += atol(i->val.c_str());
 		return cell(Number, str(n));
 	}
 
 }
-cell proc_sub(const cells& c) {
+cell proc_sub(const cells& c) {//flag로 정수인지 소수인지 판단
 	bool flag = check_float(c.begin(), c.end());
 
-	if (flag) {
+	if (flag) {//소수이면 소수로 계산을 함
 		float n(stof(c[0].val));
 		for (cellit i = c.begin() + 1; i != c.end(); ++i) n -= stof(i->val);
 		return cell(Number, to_string(n));
 	}
-	else {
+	else {//정수면 정수로 계산을 함
 		long n(atol(c[0].val.c_str()));
 		for (cellit i = c.begin() + 1; i != c.end(); ++i) n -= atol(i->val.c_str());
 		return cell(Number, str(n));
 	}
-
 }
 cell proc_mul(const cells& c) {
 	bool flag = check_float(c.begin(), c.end());
 
-	if (flag) {
+	if (flag) {//소수이면 소수로 계산을 함
 		float n(stof(c[0].val));
 		for (cellit i = c.begin() + 1; i != c.end(); ++i) n *= stof(i->val);
 		return cell(Number, to_string(n));
 	}
-	else {
+	else {//정수면 정수로 계산을 함
 		long n(1);
 		for (cellit i = c.begin(); i != c.end(); ++i) n *= atol(i->val.c_str());
 		return cell(Number, str(n));
 	}
-
 }
 cell proc_div(const cells& c) {
-	bool flag = check_float(c.begin(), c.end());
-
-	if (flag) {
-		float n(stof(c[0].val));
-		for (cellit i = c.begin() + 1; i != c.end(); ++i) n /= stof(i->val);
-		return cell(Number, to_string(n));
-	}
-	else {
-		long n(atol(c[0].val.c_str()));
-		for (cellit i = c.begin() + 1; i != c.end(); ++i) n /= atol(i->val.c_str());
-		return cell(Number, str(n));
-	}
-
+	float n(stof(c[0].val));
+	for (cellit i = c.begin() + 1; i != c.end(); ++i) n /= stof(i->val);
+	return cell(Number, to_string(n));
 }
 cell proc_greater(const cells& c) {
 	bool flag = check_float(c.begin(), c.end());
 
-	if (flag) {
+	if (flag) {//소수이면 소수로 계산을 함
 		float n(stof(c[0].val));
 		for (cellit i = c.begin() + 1; i != c.end(); ++i)
 			if (n <= stof(i->val))
 				return false_sym;
 		return true_sym;
 	}
-	else {
+	else {//정수면 정수로 계산을 함
 		long n(atol(c[0].val.c_str()));
 		for (cellit i = c.begin() + 1; i != c.end(); ++i)
 			if (n <= atol(i->val.c_str()))
 				return false_sym;
 		return true_sym;
 	}
-
 }
 cell proc_less(const cells& c) {
 	bool flag = check_float(c.begin(), c.end());
 
-	if (flag) {
+	if (flag) {//소수이면 소수로 계산을 함
 		float n(stof(c[0].val));
 		for (cellit i = c.begin() + 1; i != c.end(); ++i)
 			if (n >= stof(i->val))
 				return false_sym;
 		return true_sym;
 	}
-	else {
+	else {//정수면 정수로 계산을 함
 		long n(atol(c[0].val.c_str()));
 		for (cellit i = c.begin() + 1; i != c.end(); ++i)
 			if (n >= atol(i->val.c_str()))
@@ -209,14 +194,14 @@ cell proc_less(const cells& c) {
 cell proc_less_equal(const cells& c) {
 	bool flag = check_float(c.begin(), c.end());
 
-	if (flag) {
+	if (flag) {//소수이면 소수로 계산을 함
 		float n(stof(c[0].val));
 		for (cellit i = c.begin() + 1; i != c.end(); ++i)
 			if (n > stof(i->val))
 				return false_sym;
 		return true_sym;
 	}
-	else {
+	else {//정수면 정수로 계산을 함
 		long n(atol(c[0].val.c_str()));
 		for (cellit i = c.begin() + 1; i != c.end(); ++i)
 			if (n > atol(i->val.c_str()))
@@ -228,14 +213,14 @@ cell proc_less_equal(const cells& c) {
 cell proc_greater_equal(const cells& c) {
 	bool flag = check_float(c.begin(), c.end());
 
-	if (flag) {
+	if (flag) {//소수이면 소수로 계산을 함
 		float n(stof(c[0].val));
 		for (cellit i = c.begin() + 1; i != c.end(); ++i)
 			if (n < stof(i->val))
 				return false_sym;
 		return true_sym;
 	}
-	else {
+	else {//정수면 정수로 계산을 함
 		long n(atol(c[0].val.c_str()));
 		for (cellit i = c.begin() + 1; i != c.end(); ++i)
 			if (n < atol(i->val.c_str()))
@@ -247,13 +232,14 @@ cell proc_numberp(const cells& c) { return c[0].type == Number ? true_sym : fals
 cell proc_atom(const cells& c) { return c[0].type == Symbol ? true_sym : false_sym; }
 cell proc_length(const cells& c) { return cell(Number, str(c[0].list.size())); }
 cell proc_null(const cells& c) { return c[0].list.empty() ? true_sym : false_sym; }
-cell proc_car(const cells& c) { return c[0].list[0]; }
+cell proc_car(const cells& c) { return c[0].list[0]; }//car함수는 첫번째 것을 리턴해주므로 이렇게 정의
+
 cell proc_cdr(const cells& c)
 {
 	if (c[0].list.size() < 2)
 		return nil;
 	cell result(c[0]);
-	result.list.erase(result.list.begin());
+	result.list.erase(result.list.begin());//첫번째 것을 제외하고 리턴해야하므로 지워줌
 	return result;
 }
 cell proc_caddr(const cells& c) {
@@ -264,7 +250,7 @@ cell proc_caddr(const cells& c) {
 	result.list.erase(result.list.begin());
 	return result.list[0];
 }
-cell proc_append(const cells& c) {
+cell proc_append(const cells& c) {//여러개의 리스트를 하나로 만들어주는 함수
 	cell result(List);
 	result.list = c[0].list;
 	for (int k = 1; k < c.size(); k++) {
@@ -352,13 +338,16 @@ cell proc_equal(const cells& c) {
 	}
 }
 cell proc_stringp(const cells& c) {
-	return true_sym;
+	return c[0].type == String ? true_sym : nil;
+}
+cell proc_print(const cells& c) {
+	return c[0];
 }
 
 
 
-
-////////////////////// eval
+////////////////////// eval함수
+//parser
 cell eval(cell x, environment* env) {
 	if (x.type == Symbol) {
 		string lower_str = lowercase(x.val);
@@ -366,14 +355,28 @@ cell eval(cell x, environment* env) {
 	}
 	if (x.type == Number)
 		return x;
+	if (x.type == String)
+		return x;
 	if (x.list.empty())
 		return nil;
-	if (x.list[0].type == Symbol || x.val == "\'") {
-		if (x.val == "\'")
+	if (x.list[0].type == Symbol || x.val == "\'" || x.val == "\"" || x.val == "#") {
+		if (x.val == "\'" || x.val == "#")
 			return x.list[0];
-		if (lowercase(x.list[0].val) == "if")         // (if test conseq [alt])
-			return eval(eval(x.list[1], env).val == "#f" ? (x.list.size() < 4 ? nil : x.list[3]) : x.list[2], env);
-		if (lowercase(x.list[0].val) == "setq")      // (setq var exp)
+		if (x.val == "\"") {
+			x.list[0].val.pop_back();
+			return x.list[0];
+		}
+		if (lowercase(x.list[0].val) == "if")         //cell로 맵핑하지 않은 함수중 if를 인식하는 역할을 한다.
+			return eval(eval(x.list[1], env).val == "false" ? (x.list.size() < 4 ? nil : x.list[3]) : x.list[2], env);
+		if (lowercase(x.list[0].val) == "cond") {
+			int i;
+			for (i = 1; i < x.list.size(); i++) {
+				if (x.list[i].list.size() == 1) return eval(x.list[i].list[0], env);
+				if (eval(x.list[i].list[0], env).val == "true") return eval(x.list[i].list[1], env);
+			}
+		}
+
+		if (lowercase(x.list[0].val) == "setq")      //cell로 맵핑하지 않은 함수중 setq를 인식하는 역할을 함.
 			return (*env)[x.list[1].val] = eval(x.list[2], env);
 		if (lowercase(x.list[0].val) == "nth") {
 			if (x.list[2].type != List || x.list[2].list[0].type == Symbol)
@@ -386,6 +389,10 @@ cell eval(cell x, environment* env) {
 				return nil;
 			return result[val];
 		}
+		//
+		//cell로 모든 함수를 맵핑하려 했으나, if cond setq등 맵핑하는데 어려울 것 같은 함수들은 eval
+		//함수 내에 해당 역할을 수행하는 if문을 작성하였음.
+		//
 	}
 	cell proc(eval(x.list[0], env));
 	cells exps;
@@ -400,24 +407,26 @@ cell eval(cell x, environment* env) {
 
 }
 
-// return given mumber as a string
+//숫자를 string으로 바꿔서 반환해주는 함수
 string str(long n) {
 	ostringstream os;
 	os << n;
 	return os.str();
 }
+//ostringstream이란 문자열 format을 조합하여 저장해 줄때 사용하는 class이다.
 
-// return true iff given character is '0'..'9'
+
+//입력 인자가 0,1,2,,,,9등 정수일 때 true를 return 해준다
 bool isdig(char c) {
 	return isdigit(static_cast<unsigned char>(c)) != 0;
 }
 
-//made by LSY
+//입력인자가 2.34, 1.03 등 소수일때 true를 return해준다.
 bool isfloat(string c) {
 	return c.find('.') == string::npos ? false : true;
 }
 
-//made by LSY
+//isfloat를 이용하여, cell에 있는 숫자들이 모두 float인지 검사해주는 함수.
 bool check_float(const cellit& start, const cellit& end) {
 	for (cellit i = start; i != end; i++) {
 		if (isfloat(i->val)) {
@@ -427,14 +436,15 @@ bool check_float(const cellit& start, const cellit& end) {
 	return false;
 }
 
+//모두 소문자로 바꾸어주는 함수
 string lowercase(string up_string) {
 	transform(up_string.begin(), up_string.end(), up_string.begin(), tolower);
 	return up_string;
 }
 
-////////////////////// parse, read and user interaction
 
-// the default read-eval-print-loop
+//while true 문을 통해서,
+//계속 입력을 받아주도록 되어있는 repl 함수
 void repl(const string& prompt, environment* env)
 {
 	while (true) {
@@ -444,14 +454,17 @@ void repl(const string& prompt, environment* env)
 	}
 }
 
-// return the Lisp expression represented by the given string
+
+//입력받은 식을 lisp식으로 반환해주는 함수
 cell read(const string& s)
 {
 	list<string> tokens(tokenize(s));
 	return read_from(tokens);
 }
 
-// convert given string to list of tokens
+
+//입력 받은 str을 토큰화 하여 토큰 list로 반환해주는 함수.
+//lexer
 list<string> tokenize(const string& str) {
 	list<string> tokens;
 	const char* s = str.c_str();
@@ -466,6 +479,20 @@ list<string> tokenize(const string& str) {
 			tokens.push_back("\'");
 			s++;
 		}
+		else if (*s == '\"') {
+			tokens.push_back("\"");
+			s++;
+			const char* t = s;
+			while (*t && *t != '(' && *t != ')') {
+				++t;
+			}
+			tokens.push_back(lowercase(string(s, t)));
+			s = t;
+		}
+		else if (*s == '#') {
+			tokens.push_back("#");
+			s++;
+		}
 		else {
 			const char* t = s;
 			while (*t && *t != ' ' && *t != '(' && *t != ')') {
@@ -478,7 +505,8 @@ list<string> tokenize(const string& str) {
 	return tokens;
 }
 
-// return the Lisp expression in the given tokens
+
+//토큰 list에서 lisp 식을 반환해주는 함수.
 cell read_from(list<string>& tokens) {
 	const string token(tokens.front());
 	tokens.pop_front();
@@ -495,18 +523,34 @@ cell read_from(list<string>& tokens) {
 		c.list.push_back(read_from(tokens));
 		return c;
 	}
+	else if (token == "\"") {
+		cell c(List, "\"");
+		c.list.push_back(read_from(tokens));
+		return c;
+	}
+	else if (token == "#") {
+		cell c(List, "#");
+		c.list.push_back(read_from(tokens));
+		return c;
+	}
 	else
 		return atom(token);
 }
 
-// numbers become Numbers; every other token is a Symbol
+
+
+//위에서 정의해준 enum대로, 숫자면 enum의 Numbers, string이면 String
+//다른 토큰들은 Symbol이라는 속성을 부여한 cell로 바꾸어준다.
 cell atom(const string& token) {
 	if (isdig(token[0]) || (token[0] == '-' && isdig(token[1])))
 		return cell(Number, token);
+	else if (!(token.find('\"') == string::npos))
+		return cell(String, token);
 	return cell(Symbol, token);
 }
 
-// convert given cell to a Lisp-readable string
+
+//cell속성으로 입력받은 인자들을, lisp string으로 반환한다.
 string to_string(const cell& exp)
 {
 	if (exp.type == List) {
@@ -522,7 +566,13 @@ string to_string(const cell& exp)
 	return exp.val;
 }
 
-// define the bare minimum set of primintives necessary to pass the unit tests
+
+//입력받은 environment env가, [] 괄호에 해당하는 내용일경우, 해당하는 함수 포인터를 cell()에
+//집어넣어 cell화 시킨후,env[]에 return한다.
+
+//예를 들어 설명하면, environment & env에 append라는 값이 들어오면,
+//env["append"]에 해당하므로, env["append"] = cell(&proc_append); 라는 줄에 의해
+//proc_append함수의 포인터를 cell화 시켜서 대입해준다.
 void add_globals(environment& env)
 {
 	env["nil"] = nil;   env["#f"] = false_sym;  env["#t"] = true_sym;
@@ -535,11 +585,13 @@ void add_globals(environment& env)
 	env["-"] = cell(&proc_sub);      env["*"] = cell(&proc_mul);
 	env["/"] = cell(&proc_div);      env[">"] = cell(&proc_greater);
 	env["<"] = cell(&proc_less);     env["<="] = cell(&proc_less_equal);
-	env[">="] = cell(&proc_greater_equal); env["caddr"] = cell(&proc_caddr);
+	env[">="] = cell(&proc_greater_equal); env["="] = cell(&proc_equal);
+	env["caddr"] = cell(&proc_caddr);
 	env["reverse"] = cell(&proc_reverse); env["ERROR"] = error;
 	env["atom"] = cell(&proc_atom); env["numberp"] = cell(&proc_numberp);
 	env["zerop"] = cell(&proc_zerop); env["minusp"] = cell(&proc_minusp);
 	env["equal"] = cell(&proc_equal); env["stringp"] = cell(&proc_stringp);
+	env["print"] = cell(&proc_print);
 }
 
 int main()
@@ -547,4 +599,5 @@ int main()
 	environment global_env;
 	add_globals(global_env);
 	repl("90> ", &global_env);
+
 }
