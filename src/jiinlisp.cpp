@@ -6,6 +6,7 @@
 #include <list>
 #include <map>
 
+
 using namespace std;
 
 //////////////////////////////////////////////////////////////////////////////////////
@@ -49,29 +50,30 @@ const cell error(Symbol, "ERROR");
 /////////////////////////////////////////////////////////////////////////////////////////////
 
 
-//각 기호들을 해당 셀과 연결하고, outer dictionary 외부에 연결할 수 있게 해주는 dictionary이다
+//각 기호들을 해당 셀과 연결하고
+//만약 추가로 함수를 정의한다면 outer를 이용하여 만들어는 dictionary이다
 struct environment {
 	// 변수 이름들을 셀로 매핑해준다.
 	typedef map<string, cell> map;
 
-	environment(environment* outer = 0) : outer_(outer) {}
+	//environment(environment* outer = 0) : outer_(outer) {}
 
-	environment(const cells& parms, const cells& args, environment* outer)
-		: outer_(outer)
-	{
-		cellit a = args.begin();
-		for (cellit p = parms.begin(); p != parms.end(); ++p)
-			env_[p->val] = *a++;
-	}
+	//environment(const cells& parms, const cells& args, environment* outer)
+		//: outer_(outer)
+	//{
+	//	cellit a = args.begin();
+	//	for (cellit p = parms.begin(); p != parms.end(); ++p)
+	//		env_[p->val] = *a++;
+	//}
 
 
-	//string var이 나타나는 가장 안쪽(재귀로 함수를 부를 수 있으므로)에 레퍼런스를 반환한다.
+	//string var이 나타나는 레퍼런스를 반환한다.
 	map& find(const string& var)
 	{
 		if (env_.find(var) != env_.end())
 			return env_; // symbol들이 위에서 매핑한 env에 들어있으므로, 이것을 리턴해줌.
-		if (outer_)
-			return outer_->find(var); // "outer"에서도 symbol을 찾아줌
+	//	if (outer_)
+		//	return outer_->find(var); // "outer"에서도 symbol을 찾아줌
 		cout << "unbound symbol '" << var << endl;
 		exit(1);
 	}
@@ -84,7 +86,7 @@ struct environment {
 
 private:
 	map env_; // 셀로 맵핑해두었음.
-	environment* outer_; // 만약 0이라면, 다음에 읽어올 외부환경(재귀로 읽었을 때 외부)이 없다는 이야기이다.
+	environment* outer_; 
 };
 
 string str(long n);
@@ -103,7 +105,7 @@ void add_globals(environment& env); cell eval(cell x, environment* env);
 //////////////////////////////////////// functions ////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////
 
-
+//내장함수
 cell proc_add(const cells& c) {
 	bool flag = check_float(c.begin(), c.end());
 
@@ -150,7 +152,9 @@ cell proc_mul(const cells& c) {
 
 }
 cell proc_div(const cells& c) {
-	bool flag = check_float(c.begin(), c.end());
+
+	/*
+		bool flag = check_float(c.begin(), c.end());
 
 	if (flag) {
 		float n(stof(c[0].val));
@@ -162,6 +166,10 @@ cell proc_div(const cells& c) {
 		for (cellit i = c.begin() + 1; i != c.end(); ++i) n /= atol(i->val.c_str());
 		return cell(Number, str(n));
 	}
+	*/
+	float n(stof(c[0].val));
+	for (cellit i = c.begin() + 1; i != c.end(); ++i) n /= stof(i->val);
+	return cell(Number, to_string(n));
 
 }
 cell proc_greater(const cells& c) {
@@ -356,7 +364,7 @@ cell proc_print(const cells& c) {
 
 
 
-////////////////////// eval
+////////////////////// eval함수
 cell eval(cell x, environment* env) {
 	if (x.type == Symbol) {
 		string lower_str = lowercase(x.val);
@@ -607,4 +615,5 @@ int main()
 	environment global_env;
 	add_globals(global_env);
 	repl("90> ", &global_env);
+
 }
