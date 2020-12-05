@@ -10,7 +10,7 @@ using namespace std;
 
 ////////////////////// cell
 
-enum cell_type { Symbol, Number, List, Proc };
+enum cell_type { Symbol, Number, List, Proc, String };
 
 struct environment; // forward declaration; cell and environment reference each other
 
@@ -88,15 +88,6 @@ bool isfloat(string c);
 bool check_float(const cellit& start, const cellit& end);
 string lowercase(string up_string);
 
-////////////////////// built-in primitive procedures
-cell proc_add(const cells& c); cell proc_sub(const cells& c); cell proc_mul(const cells& c);
-cell proc_div(const cells& c); cell proc_greater(const cells& c); cell proc_less(const cells& c);
-cell proc_less_equal(const cells& c); cell proc_length(const cells& c); cell proc_nullp(const cells& c);
-cell proc_car(const cells& c); cell proc_cdr(const cells& c); cell proc_append(const cells& c);
-cell proc_cons(const cells& c); cell proc_list(const cells& c);
-
-/*insert user_define func*/
-cell proc_caddr(const cells& c);
 
 ////////////////////// parse, read and user interaction
 list<string> tokenize(const string& str); cell atom(const string& token); cell read_from(list<string>& tokens);
@@ -352,9 +343,11 @@ cell proc_equal(const cells& c) {
 	}
 }
 cell proc_stringp(const cells& c) {
-	return true_sym;
+	return c[0].type == String ? true_sym : nil;
 }
-
+cell proc_print(const cells& c) {
+	return c[0];
+}
 
 
 
@@ -366,13 +359,28 @@ cell eval(cell x, environment* env) {
 	}
 	if (x.type == Number)
 		return x;
+	if (x.type == String)
+		return x;
 	if (x.list.empty())
 		return nil;
-	if (x.list[0].type == Symbol || x.val == "\'") {
-		if (x.val == "\'")
+	if (x.list[0].type == Symbol || x.val == "\'" || x.val == "\"" || x.val == "#") {
+		if (x.val == "\'" || x.val == "#")
 			return x.list[0];
+		if (x.val == "\"") {
+			x.list[0].val.pop_back();
+			return x.list[0];
+		}
 		if (lowercase(x.list[0].val) == "if")         // (if test conseq [alt])
-			return eval(eval(x.list[1], env).val == "#f" ? (x.list.size() < 4 ? nil : x.list[3]) : x.list[2], env);
+			return eval(eval(x.list[1], env).val == "false" ? (x.list.size() < 4 ? nil : x.list[3]) : x.list[2], env);
+		if (lowercase(x.list[0].val) == "cond") {
+			int i;
+			for (i = 1; i < x.list.size(); i++) {
+				if (x.list[i].list.size() == 1) return eval(x.list[i].list[0], env);
+				if (eval(x.list[i].list[0], env).val == "true") return eval(x.list[i].list[1], env);
+
+			}
+		}
+
 		if (lowercase(x.list[0].val) == "setq")      // (setq var exp)
 			return (*env)[x.list[1].val] = eval(x.list[2], env);
 		if (lowercase(x.list[0].val) == "nth") {
@@ -466,6 +474,20 @@ list<string> tokenize(const string& str) {
 			tokens.push_back("\'");
 			s++;
 		}
+		else if (*s == '\"') {
+			tokens.push_back("\"");
+			s++;
+			const char* t = s;
+			while (*t && *t != '(' && *t != ')') {
+				++t;
+			}
+			tokens.push_back(lowercase(string(s, t)));
+			s = t;
+		}
+		else if (*s == '#') {
+			tokens.push_back("#");
+			s++;
+		}
 		else {
 			const char* t = s;
 			while (*t && *t != ' ' && *t != '(' && *t != ')') {
@@ -495,6 +517,16 @@ cell read_from(list<string>& tokens) {
 		c.list.push_back(read_from(tokens));
 		return c;
 	}
+	else if (token == "\"") {
+		cell c(List, "\"");
+		c.list.push_back(read_from(tokens));
+		return c;
+	}
+	else if (token == "#") {
+		cell c(List, "#");
+		c.list.push_back(read_from(tokens));
+		return c;
+	}
 	else
 		return atom(token);
 }
@@ -503,6 +535,8 @@ cell read_from(list<string>& tokens) {
 cell atom(const string& token) {
 	if (isdig(token[0]) || (token[0] == '-' && isdig(token[1])))
 		return cell(Number, token);
+	else if (!(token.find('\"') == string::npos))
+		return cell(String, token);
 	return cell(Symbol, token);
 }
 
@@ -535,11 +569,13 @@ void add_globals(environment& env)
 	env["-"] = cell(&proc_sub);      env["*"] = cell(&proc_mul);
 	env["/"] = cell(&proc_div);      env[">"] = cell(&proc_greater);
 	env["<"] = cell(&proc_less);     env["<="] = cell(&proc_less_equal);
-	env[">="] = cell(&proc_greater_equal); env["caddr"] = cell(&proc_caddr);
+	env[">="] = cell(&proc_greater_equal); env["="] = cell(&proc_equal);
+	env["caddr"] = cell(&proc_caddr);
 	env["reverse"] = cell(&proc_reverse); env["ERROR"] = error;
 	env["atom"] = cell(&proc_atom); env["numberp"] = cell(&proc_numberp);
 	env["zerop"] = cell(&proc_zerop); env["minusp"] = cell(&proc_minusp);
 	env["equal"] = cell(&proc_equal); env["stringp"] = cell(&proc_stringp);
+	env["print"] = cell(&proc_print);
 }
 
 int main()
