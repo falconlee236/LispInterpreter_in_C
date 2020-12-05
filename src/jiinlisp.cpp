@@ -242,14 +242,6 @@ cell proc_cdr(const cells& c)
 	result.list.erase(result.list.begin());//첫번째 것을 제외하고 리턴해야하므로 지워줌
 	return result;
 }
-cell proc_caddr(const cells& c) {
-	if (c[0].list.size() < 3)
-		return nil;
-	cell result(c[0]);
-	result.list.erase(result.list.begin());
-	result.list.erase(result.list.begin());
-	return result.list[0];
-}
 cell proc_append(const cells& c) {//여러개의 리스트를 하나로 만들어주는 함수
 	cell result(List);
 	result.list = c[0].list;
@@ -619,7 +611,6 @@ void add_globals(environment& env)
 	env["/"] = cell(&proc_div);      env[">"] = cell(&proc_greater);
 	env["<"] = cell(&proc_less);     env["<="] = cell(&proc_less_equal);
 	env[">="] = cell(&proc_greater_equal); env["="] = cell(&proc_equal);
-	env["caddr"] = cell(&proc_caddr);//여기를 지우랍신다!!!!!!!!!!!!!!!!!!!!!!
 	env["reverse"] = cell(&proc_reverse); env["ERROR"] = error;
 	env["atom"] = cell(&proc_atom); env["numberp"] = cell(&proc_numberp);
 	env["zerop"] = cell(&proc_zerop); env["minusp"] = cell(&proc_minusp);
