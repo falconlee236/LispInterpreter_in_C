@@ -56,14 +56,24 @@ struct environment {
 	// 변수 이름들을 셀로 매핑해준다.
 	typedef map<string, cell> map;
 
+	environment(environment* outer = 0) : outer_(outer) {}
+
+	environment(const cells& parms, const cells& args, environment* outer)
+		: outer_(outer)
+	{
+		cellit a = args.begin();
+		for (cellit p = parms.begin(); p != parms.end(); ++p)
+			env_[p->val] = *a++;
+	}
 	//string var이 나타나는 레퍼런스를 반환한다.
 	map& find(const string& var)
 	{
 		if (env_.find(var) != env_.end())
 			return env_; // symbol들이 위에서 매핑한 env에 들어있으므로, 이것을 리턴해줌.
-	//	if (outer_)
-		//	return outer_->find(var); // "outer"에서도 symbol을 찾아줌
-		cout << "unbound symbol '" << var << endl;
+		if (outer_)//사용자 정의함수가 생기는 순간, outer_가 0에서 1,2,3등의 값으로 바뀌므로
+			//env_함수에서 해당 함수를 find하지 못했을 때 outer에서 찾기를 수행한다.
+			return outer_->find(var); // "outer"에서도 symbol을 찾아줌
+		cout << "unbound symbol '" << var << endl;//아무것도 찾지 못했을 때 출력.
 		exit(1);
 	}
 
@@ -75,6 +85,7 @@ struct environment {
 
 private:
 	map env_; // 셀로 맵핑해두었음.
+	environment* outer_; //아우터 포인터는, 새로운 함수를 정의할 때 쓰인다.
 };
 
 string str(long n);
@@ -93,23 +104,23 @@ void add_globals(environment& env); cell eval(cell x, environment* env);
 //////////////////////////////////////// functions ////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////
 
-//내장함수
+//내장함수들
 cell proc_add(const cells& c) {
-	bool flag = check_float(c.begin(), c.end());
+	bool flag = check_float(c.begin(), c.end());//flag로 정수인지 소수인지 판단해준다.
 
-	if (flag) {
+	if (flag) {//소수이면 소수로 계산을 함
 		float n(stof(c[0].val));
 		for (cellit i = c.begin() + 1; i != c.end(); ++i) n += stof(i->val);
 		return cell(Number, to_string(n));
 	}
-	else {
+	else {//정수면 정수로 계산을 함
 		long n(atol(c[0].val.c_str()));
 		for (cellit i = c.begin() + 1; i != c.end(); ++i) n += atol(i->val.c_str());
 		return cell(Number, str(n));
 	}
 
 }
-cell proc_sub(const cells& c) {
+cell proc_sub(const cells& c) {//flag로 정수인지 소수인지 판단
 	bool flag = check_float(c.begin(), c.end());
 
 	if (flag) {
@@ -359,7 +370,6 @@ cell eval(cell x, environment* env) {
 			for (i = 1; i < x.list.size(); i++) {
 				if (x.list[i].list.size() == 1) return eval(x.list[i].list[0], env);
 				if (eval(x.list[i].list[0], env).val == "true") return eval(x.list[i].list[1], env);
-
 			}
 		}
 
