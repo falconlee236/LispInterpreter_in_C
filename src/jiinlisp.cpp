@@ -130,11 +130,13 @@ cell proc_sub(const cells& c) {//flag로 정수인지 소수인지 판단
 	if (flag) {//소수이면 소수로 계산을 함
 		float n(stof(c[0].val));
 		for (cellit i = c.begin() + 1; i != c.end(); ++i) n -= stof(i->val);
+		if (c.begin() + 1 == c.end()) n *= -1;
 		return cell(Number, to_string(n));
 	}
 	else {//정수면 정수로 계산을 함
 		long n(atol(c[0].val.c_str()));
 		for (cellit i = c.begin() + 1; i != c.end(); ++i) n -= atol(i->val.c_str());
+		if (c.begin() + 1 == c.end()) n *= -1;
 		return cell(Number, str(n));
 	}
 }
@@ -483,11 +485,13 @@ cell read(const string& s)
 list<string> tokenize(const string& str) {
 	list<string> tokens;
 	const char* s = str.c_str();
+	static int front = 0;
 	while (*s) {
 		while (*s == ' ') {//lisp의 토큰들은 ' '공백을 기준으로 나뉘기 때문. ex: setq (공백) x (공백) 3
 			++s;
 		}
-
+		if (*s == '(') front++;
+		if (*s == ')') front--;
 		if (*s == '(' || *s == ')')
 			tokens.push_back(*s++ == '(' ? "(" : ")");
 		else if (*s == '\'') {
@@ -516,6 +520,10 @@ list<string> tokenize(const string& str) {
 			tokens.push_back(uppercase(string(s, t)));
 			s = t;
 		}
+	}
+	if (front != 0) {
+		string line; getline(cin, line);
+		tokens.splice(tokens.end(), tokenize(line));
 	}
 	return tokens;
 }
@@ -618,10 +626,12 @@ void add_globals(environment& env)
 	env["/"] = cell(&proc_div);      env[">"] = cell(&proc_greater);
 	env["<"] = cell(&proc_less);     env["<="] = cell(&proc_less_equal);
 	env[">="] = cell(&proc_greater_equal);
+	env["="] = cell(&proc_equal);
 	env["REVERSE"] = cell(&proc_reverse); env["ERROR"] = error;
 	env["ATOM"] = cell(&proc_atom); env["NUMBERP"] = cell(&proc_numberp);
 	env["ZEROP"] = cell(&proc_zerop); env["MINUSP"] = cell(&proc_minusp);
 	env["EQUAL"] = cell(&proc_equal); env["STRINGP"] = cell(&proc_stringp);
+	env["PRINT"] = cell(&proc_print);
 }
 
 int main()
