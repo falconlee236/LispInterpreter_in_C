@@ -3,8 +3,8 @@ Concepts of programming languages. 10/E/Sebesta, Robert W.
 LispInterpreter in C++
 
 20190532 이상윤
-(학번 쓰기) 강지인
-(학번 쓰기) 강현준
+20191913 강지인
+20190048 강현준
 */
 
 #include <iostream>
@@ -247,17 +247,29 @@ cell proc_greater_equal(const cells& c) {//크거나 같은지
 	}
 }
 cell proc_numberp(const cells& c) { return c[0].type == Number ? true_sym : false_sym; }
-cell proc_atom(const cells& c) { return c[0].type == Symbol ? true_sym : false_sym; }
 cell proc_length(const cells& c) { return cell(Number, str(c[0].list.size())); }
 cell proc_null(const cells& c) { return c[0].list.empty() ? true_sym : false_sym; }
-cell proc_car(const cells& c) {
-	if (c[0].list.size() == 0) return c[0];//CADAR을 위해 리스트가 아닌 단일 심볼이 들어오면 그대로 반환
-	return c[0].list[0];
+cell proc_car(const cells& c) { 
+	if(c[0].list.size() == 0) return c[0];
+	return c[0].list[0]; 
 }//car함수는 첫번째 것을 리턴해주므로 이렇게 정의
+cell proc_atom(const cells& c) { 
+	/*
+	(atom nil) => T
+	(atom 'some-symbol) => T
+	(atom 3) => T
+	(atom "moo") => T
+	(atom (cons 1 2)) => NIL
+	(atom '(1 . 2)) => NIL
+	(atom '(1 2 3 4)) => NIL
+	(atom (list 1 2 3 4)) => NIL
+	*/
+	return (c[0].type == Symbol || c[0].type == String || c[0].type == Number) ? true_sym : nil; 
+}
 
 cell proc_cdr(const cells& c)
 {
-	if (c[0].list.size() == 0) return c[0];//CADAR을 위해 리스트가 아닌 단일 심볼이 들어오면 그대로 반환
+	if(c[0].list.size() == 0) return c[0];
 	if (c[0].list.size() < 2)
 		return nil;
 	cell result(c[0]);
@@ -364,9 +376,9 @@ cell proc_print(const cells& c) {
 //parser에 해당함
 cell eval(cell x, environment* env) {
 	if (x.type == Symbol) {
-		string lower_str = uppercase(x.val);
-		return env->find(lower_str)[lower_str];
-		//find함수를 통해서 lower_str로 변환한 해당 symbol이 정의되어있는
+		string upper_str = uppercase(x.val);
+		return env->find(upper_str)[upper_str];
+		//find함수를 통해서 upper_str로 변환한 해당 symbol이 정의되어있는
 		//(또는 lambda를 통해 정의한적있는) 함수인지를 찾는다.
 	}
 	if (x.type == Number)
@@ -651,6 +663,6 @@ int main()
 {
 	environment global_env;
 	add_globals(global_env);
-	repl("90> ", &global_env);
+	repl(">>> ", &global_env);
 
 }
