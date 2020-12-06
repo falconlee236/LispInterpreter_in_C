@@ -1,3 +1,12 @@
+/*
+Concepts of programming languages. 10/E/Sebesta, Robert W.
+LispInterpreter in C++
+
+20190532 이상윤
+(학번 쓰기) 강지인
+(학번 쓰기) 강현준
+*/
+
 #include <iostream>
 #include <sstream>
 #include <algorithm>
@@ -126,7 +135,7 @@ cell proc_add(const cells& c) {
 }
 cell proc_sub(const cells& c) {//flag로 정수인지 소수인지 판단
 	bool flag = check_float(c.begin(), c.end());
-	
+
 	if (flag) {//소수이면 소수로 계산을 함
 		float n(stof(c[0].val));
 		for (cellit i = c.begin() + 1; i != c.end(); ++i) n -= stof(i->val);
@@ -160,7 +169,7 @@ cell proc_mul(const cells& c) {
 cell proc_div(const cells& c) {
 	float n(stof(c[0].val));//전부 소수로 생각하고 계산(정수/정수 도 소수가 될 수 있으므로)
 	for (cellit i = c.begin() + 1; i != c.end(); ++i) n /= stof(i->val);
-	if ((c.begin() + 1) == c.end()) n = 1/n;
+	if ((c.begin() + 1) == c.end()) n = 1 / n;
 	return cell(Number, to_string(n));
 }
 cell proc_greater(const cells& c) {//큰지
@@ -241,10 +250,14 @@ cell proc_numberp(const cells& c) { return c[0].type == Number ? true_sym : fals
 cell proc_atom(const cells& c) { return c[0].type == Symbol ? true_sym : false_sym; }
 cell proc_length(const cells& c) { return cell(Number, str(c[0].list.size())); }
 cell proc_null(const cells& c) { return c[0].list.empty() ? true_sym : false_sym; }
-cell proc_car(const cells& c) { return c[0].list[0]; }//car함수는 첫번째 것을 리턴해주므로 이렇게 정의
+cell proc_car(const cells& c) {
+	if (c[0].list.size() == 0) return c[0];//CADAR을 위해 리스트가 아닌 단일 심볼이 들어오면 그대로 반환
+	return c[0].list[0];
+}//car함수는 첫번째 것을 리턴해주므로 이렇게 정의
 
 cell proc_cdr(const cells& c)
 {
+	if (c[0].list.size() == 0) return c[0];//CADAR을 위해 리스트가 아닌 단일 심볼이 들어오면 그대로 반환
 	if (c[0].list.size() < 2)
 		return nil;
 	cell result(c[0]);
@@ -453,7 +466,7 @@ bool check_float(const cellit& start, const cellit& end) {
 	return false;
 }
 
-//모두 소문자로 바꾸어주는 함수
+//모두 대문자로 바꾸어주는 함수
 string uppercase(string up_string) {
 	transform(up_string.begin(), up_string.end(), up_string.begin(), toupper);
 	return up_string;
@@ -626,10 +639,12 @@ void add_globals(environment& env)
 	env["/"] = cell(&proc_div);      env[">"] = cell(&proc_greater);
 	env["<"] = cell(&proc_less);     env["<="] = cell(&proc_less_equal);
 	env[">="] = cell(&proc_greater_equal);
+	env["="] = cell(&proc_equal);
 	env["REVERSE"] = cell(&proc_reverse); env["ERROR"] = error;
 	env["ATOM"] = cell(&proc_atom); env["NUMBERP"] = cell(&proc_numberp);
 	env["ZEROP"] = cell(&proc_zerop); env["MINUSP"] = cell(&proc_minusp);
 	env["EQUAL"] = cell(&proc_equal); env["STRINGP"] = cell(&proc_stringp);
+	env["PRINT"] = cell(&proc_print);
 }
 
 int main()
