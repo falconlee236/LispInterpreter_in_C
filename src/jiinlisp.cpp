@@ -1,3 +1,12 @@
+/*
+Concepts of programming languages. 10/E/Sebesta, Robert W.
+LispInterpreter in C++
+
+20190532 이상윤
+(학번 쓰기) 강지인
+(학번 쓰기) 강현준
+*/
+
 #include <iostream>
 #include <sstream>
 #include <algorithm>
