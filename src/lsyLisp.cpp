@@ -372,9 +372,9 @@ cell proc_print(const cells& c) {
 //parser에 해당함
 cell eval(cell x, environment* env) {
 	if (x.type == Symbol) {
-		string lower_str = uppercase(x.val);
-		return env->find(lower_str)[lower_str];
-		//find함수를 통해서 lower_str로 변환한 해당 symbol이 정의되어있는
+		string upper_str = uppercase(x.val);
+		return env->find(upper_str)[upper_str];
+		//find함수를 통해서 upper_str로 변환한 해당 symbol이 정의되어있는
 		//(또는 lambda를 통해 정의한적있는) 함수인지를 찾는다.
 	}
 	if (x.type == Number)
