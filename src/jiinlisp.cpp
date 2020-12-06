@@ -453,7 +453,7 @@ bool check_float(const cellit& start, const cellit& end) {
 	return false;
 }
 
-//모두 소문자로 바꾸어주는 함수
+//모두 대문자로 바꾸어주는 함수
 string uppercase(string up_string) {
 	transform(up_string.begin(), up_string.end(), up_string.begin(), toupper);
 	return up_string;
